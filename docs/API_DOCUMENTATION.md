@@ -1,12 +1,12 @@
-# Vanity Hub API Documentation
+# Habesha Beauty Salon API Documentation
 
 ## 🎯 **Overview**
 
-This document provides comprehensive documentation for the Vanity Hub API. The API follows RESTful principles and includes authentication, rate limiting, caching, and comprehensive error handling.
+This document provides comprehensive documentation for the Habesha Beauty Salon API. The API follows RESTful principles and includes authentication, rate limiting, caching, and comprehensive error handling.
 
 ## 🔗 **Base URL**
 ```
-Production: https://vanity-hub.com/api
+Production: https://habeshabeauty.com/api
 Development: http://localhost:3000/api
 ```
 
@@ -620,11 +620,11 @@ curl -X POST "https://vanity-hub.com/api/appointments" \
 
 ### **JavaScript/TypeScript SDK** (Future)
 ```typescript
-import { VanityHubAPI } from '@vanity-hub/sdk'
+import { HabeshaBeautyAPI } from '@habesha-beauty/sdk'
 
-const api = new VanityHubAPI({
+const api = new HabeshaBeautyAPI({
   apiKey: 'your-api-key',
-  baseURL: 'https://vanity-hub.com/api'
+  baseURL: 'https://habeshabeauty.com/api'
 })
 
 // Create client

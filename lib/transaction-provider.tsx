@@ -374,9 +374,10 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
       locationId: newTransaction.location
     });
 
-    // Save transaction to database
+    // Save transaction to database (non-blocking - don't fail if DB save fails)
     saveTransactionToDatabase(newTransaction).catch(error => {
-      console.error('❌ Failed to save transaction to database:', error);
+      console.warn('⚠️ Failed to save transaction to database (localStorage save succeeded):', error);
+      // Don't throw - transaction is already saved to localStorage
     });
 
     console.log('=== TRANSACTION PROVIDER: Returning transaction ===');
@@ -411,17 +412,21 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
           } else {
             const errorText = await clientResponse.text();
             console.warn(`⚠️ SAVE TO DB: Could not fetch client data (${clientResponse.status}): ${errorText}`);
-            console.warn('⚠️ SAVE TO DB: Using clientId as userId');
+            console.warn('⚠️ SAVE TO DB: Will skip database save - transaction saved to localStorage only');
+            // Don't throw error - just skip database save
+            return null;
           }
         } catch (error) {
-          console.error('❌ SAVE TO DB: Error fetching client data:', error);
-          console.warn('⚠️ SAVE TO DB: Using clientId as userId');
+          console.warn('⚠️ SAVE TO DB: Error fetching client data, skipping database save:', error);
+          // Don't throw error - just skip database save
+          return null;
         }
       }
 
       if (!userId) {
-        console.error('❌ SAVE TO DB: No userId available, cannot save transaction');
-        throw new Error('No userId available for transaction');
+        console.warn('⚠️ SAVE TO DB: No userId available, skipping database save - transaction saved to localStorage only');
+        // Don't throw error - just skip database save
+        return null;
       }
 
       const payload = {
@@ -462,14 +467,20 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         } catch {
           errorData = { error: errorText };
         }
-        console.error('❌ SAVE TO DB: Failed to save transaction:', {
+        console.warn('⚠️ SAVE TO DB: Failed to save transaction to database (transaction saved to localStorage):', {
           status: response.status,
-          error: errorData
+          statusText: response.statusText,
+          error: errorData,
+          transactionId: transaction.id,
+          userId: userId,
+          clientId: transaction.clientId
         });
-        throw new Error(`Failed to save transaction: ${JSON.stringify(errorData)}`);
+
+        // Don't throw error - transaction is already saved to localStorage
+        return null;
       } else {
         const result = await response.json();
-        console.log('✅ SAVE TO DB: Transaction saved successfully:', {
+        console.log('✅ SAVE TO DB: Transaction saved successfully to both localStorage and database:', {
           transactionId: result.transaction?.id,
           userId: result.transaction?.userId,
           amount: result.transaction?.amount
@@ -477,8 +488,13 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         return result.transaction;
       }
     } catch (error) {
-      console.error('❌ SAVE TO DB: Error saving transaction to database:', error);
-      throw error; // Re-throw to allow caller to handle
+      console.warn('⚠️ SAVE TO DB: Error saving transaction to database (transaction saved to localStorage):', {
+        error: error instanceof Error ? error.message : error,
+        transactionId: transaction.id,
+        clientId: transaction.clientId
+      });
+      // Don't throw error - transaction is already saved to localStorage
+      return null;
     }
   };
 

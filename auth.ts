@@ -119,6 +119,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             role: user.role,
             locations: user.role === "ADMIN" ? ["all"] : locationIds,
+            jobRole: user.staffProfile?.jobRole || undefined,
           }
         } catch (error) {
           console.error("Auth error:", error)
@@ -141,6 +142,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.id = user.id
           token.role = user.role
           token.locations = user.locations
+          token.jobRole = (user as any).jobRole
         }
         return token
       } catch (error) {
@@ -154,6 +156,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           session.user.id = token.id as string
           session.user.role = token.role as string
           session.user.locations = token.locations as string[]
+          ;(session.user as any).jobRole = token.jobRole as string | undefined
         }
         return session
       } catch (error) {

@@ -33,7 +33,7 @@ const NotificationAudioProvider = dynamic(() => import("@/components/notificatio
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Vanity | Modern Salon Management",
+  title: "Habesha Beauty Salon | Modern Salon Management",
   description: "Multi-location salon management application for beauty professionals",
   generator: 'v0.dev'
 }

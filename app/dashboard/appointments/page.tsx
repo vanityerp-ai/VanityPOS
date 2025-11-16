@@ -87,6 +87,12 @@ export default function AppointmentsPage() {
       console.log("Recording consolidated transaction for appointment:", appointment);
       console.log("addTransaction function available:", typeof addTransaction);
 
+      // Validate appointment has required data
+      if (!appointment.service && (!appointment.additionalServices || appointment.additionalServices.length === 0) && (!appointment.products || appointment.products.length === 0)) {
+        console.log("Appointments page - No service, additional services, or products found, skipping transaction");
+        return;
+      }
+
       // Ensure price is set from service data if missing
       if (appointment.service && !appointment.price) {
         const service = services.find(s => s.name === appointment.service);
@@ -189,26 +195,37 @@ export default function AppointmentsPage() {
     console.log("Found completed appointments:", completedAppointments.length);
 
     completedAppointments.forEach(appointment => {
-      const totalAmount = calculateAppointmentTotal(appointment);
-      console.log(`Checking appointment ${appointment.id} (${appointment.clientName}) - Total: ${totalAmount}`);
-
-      if (totalAmount > 0) {
-        // Check if transaction should be recorded using deduplication service
-        const existingTransactions = transactions.filter(tx => 
-          tx.reference?.type === 'appointment' && 
-          tx.reference?.id === appointment.id
-        );
-
-        if (existingTransactions.length === 0) {
-          console.log(`Creating missing transaction for appointment ${appointment.id}`);
-          recordAppointmentTransaction(appointment);
-        } else {
-          console.log(`Skipping transaction creation for appointment ${appointment.id}: Transaction already exists`);
-          console.log(`Transaction(s) already exist for appointment ${appointment.id}:`, existingTransactions.length);
-          existingTransactions.forEach((tx: Transaction, index: number) => {
-            console.log(`  Transaction ${index + 1}: ${tx.id} - ${tx.amount} - ${tx.source}`);
-          });
+      try {
+        // Validate appointment has required data before processing
+        if (!appointment.service && (!appointment.additionalServices || appointment.additionalServices.length === 0) && (!appointment.products || appointment.products.length === 0)) {
+          console.log(`Skipping appointment ${appointment.id}: No service, additional services, or products found`);
+          return;
         }
+
+        const totalAmount = calculateAppointmentTotal(appointment);
+        console.log(`Checking appointment ${appointment.id} (${appointment.clientName}) - Total: ${totalAmount}`);
+
+        if (totalAmount > 0) {
+          // Check if transaction should be recorded using deduplication service
+          const existingTransactions = transactions.filter(tx =>
+            tx.reference?.type === 'appointment' &&
+            tx.reference?.id === appointment.id
+          );
+
+          if (existingTransactions.length === 0) {
+            console.log(`Creating missing transaction for appointment ${appointment.id}`);
+            recordAppointmentTransaction(appointment);
+          } else {
+            console.log(`Skipping transaction creation for appointment ${appointment.id}: Transaction already exists`);
+            console.log(`Transaction(s) already exist for appointment ${appointment.id}:`, existingTransactions.length);
+            existingTransactions.forEach((tx: Transaction, index: number) => {
+              console.log(`  Transaction ${index + 1}: ${tx.id} - ${tx.amount} - ${tx.source}`);
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing appointment ${appointment.id}:`, error);
+        // Continue processing other appointments
       }
     });
   };

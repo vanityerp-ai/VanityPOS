@@ -44,7 +44,7 @@ export function Logo({
   const settings = SettingsStorage.getGeneralSettings()
   const branding = settings.branding || {
     companyLogo: null,
-    companyName: "Vanity Hub",
+    companyName: "Habesha Beauty Salon",
     primaryBrandColor: "#8b5cf6",
     logoAltText: "Company Logo",
     showCompanyNameWithLogo: true
@@ -56,7 +56,7 @@ export function Logo({
     : branding.showCompanyNameWithLogo
 
   // Get the company name to display
-  const companyName = companyNameOverride || branding.companyName || "Vanity Hub"
+  const companyName = companyNameOverride || branding.companyName || "Habesha Beauty Salon"
 
   // Create the logo image element
   const logoImage = branding.companyLogo ? (

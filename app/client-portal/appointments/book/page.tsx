@@ -542,6 +542,20 @@ export default function BookAppointmentPage() {
             return false;
           }
 
+          // Exclude admin, super admin, manager, and receptionist roles
+          // Check jobRole field (not role) since StaffMember uses jobRole
+          const jobRole = (member.jobRole || "").toLowerCase().trim();
+          const excludedRoles = [
+            "receptionist",
+            "online_store_receptionist",
+            "admin",
+            "manager",
+            "super_admin"
+          ];
+          if (excludedRoles.includes(jobRole)) {
+            return false;
+          }
+
           if (isHomeServiceLocationById(selectedLocation)) {
             return member.homeService === true ||
                    member.locations.includes(selectedLocation)
@@ -2186,8 +2200,17 @@ export default function BookAppointmentPage() {
                             if (member.status !== 'Active') {
                               return false;
                             }
-                            // Exclude admin, super admin, and manager roles
-                            if (["ADMIN", "SUPER_ADMIN", "MANAGER"].includes((member.role || "").toUpperCase())) {
+                            // Exclude admin, super admin, manager, and receptionist roles
+                            // Check jobRole field (not role) since StaffMember uses jobRole
+                            const jobRole = (member.jobRole || "").toLowerCase().trim();
+                            const excludedRoles = [
+                              "receptionist",
+                              "online_store_receptionist",
+                              "admin",
+                              "manager",
+                              "super_admin"
+                            ];
+                            if (excludedRoles.includes(jobRole)) {
                               return false;
                             }
                             // For home service location, include staff with home service capability

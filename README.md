@@ -1,4 +1,4 @@
-# Vanity Hub 💅
+# Habesha Beauty Salon 💅
 
 A comprehensive, production-ready salon and spa management system built with Next.js 15, TypeScript, and modern web technologies. Designed for scalability, performance, and exceptional user experience.
 
@@ -71,8 +71,8 @@ A comprehensive, production-ready salon and spa management system built with Nex
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/your-username/vanity-hub.git
-cd vanity-hub
+git clone https://github.com/your-username/habesha-beauty-salon.git
+cd habesha-beauty-salon
 ```
 
 2. **Install dependencies**:
@@ -281,12 +281,12 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ### **Getting Help**
 - 📖 Check our [Documentation](docs/)
-- 🐛 Report bugs via [GitHub Issues](https://github.com/your-username/vanity-hub/issues)
-- 💬 Join our [Discord Community](https://discord.gg/vanity-hub)
-- 📧 Email support: support@vanity-hub.com
+- 🐛 Report bugs via [GitHub Issues](https://github.com/your-username/habesha-beauty-salon/issues)
+- 💬 Join our [Discord Community](https://discord.gg/habesha-beauty)
+- 📧 Email support: support@habeshabeauty.com
 
 ### **Commercial Support**
-For enterprise support and custom development, contact us at enterprise@vanity-hub.com
+For enterprise support and custom development, contact us at enterprise@habeshabeauty.com
 
 ## 📄 **License**
 

@@ -19,7 +19,9 @@ function mapStaffRoleToUserRole(staffRole: string): string {
     'barber': 'STAFF',
     'nail_technician': 'STAFF',
     'esthetician': 'STAFF',
+    'pedicurist': 'STAFF',
     'receptionist': 'STAFF',
+    'online_store_receptionist': 'STAFF',
     'staff': 'STAFF',
 
     // Client role

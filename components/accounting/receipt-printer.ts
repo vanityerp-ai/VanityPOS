@@ -72,7 +72,7 @@ export function printReceipt(transaction: Transaction, getLocationName?: (id: st
       </head>
       <body>
         <div class="header">
-          <div class="title">Vanity Hub</div>
+          <div class="title">Habesha Beauty Salon</div>
           <div class="subtitle">Receipt</div>
           <div class="subtitle-ar">فاتورة</div>
         </div>

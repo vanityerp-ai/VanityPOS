@@ -284,7 +284,7 @@ function migrateGeneralSettings(settings: any): GeneralSettings {
   if (!settings.branding) {
     settings.branding = {
       companyLogo: null,
-      companyName: settings.businessName || "Vanity Hub",
+      companyName: settings.businessName || "Habesha Beauty Salon",
       primaryBrandColor: "#8b5cf6",
       logoAltText: "Company Logo",
       showCompanyNameWithLogo: true
@@ -298,15 +298,15 @@ export const SettingsStorage = {
   // General Settings
   getGeneralSettings: (): GeneralSettings => {
     const defaultSettings: GeneralSettings = {
-      businessName: "Vanity Hub",
-      email: "info@vanityhub.com",
+      businessName: "Habesha Beauty Salon",
+      email: "info@habeshabeauty.com",
       phone: "(974) 123-4567",
       address: "123 D-Ring Road",
       city: "Doha",
       state: "",
       zipCode: "",
       country: "Qatar",
-      website: "https://www.vanityhub.com",
+      website: "https://www.habeshabeauty.com",
       description: "Premium salon services for hair, skin, and nails.",
       timezone: "Asia/Qatar",
       currency: "QAR",
@@ -317,7 +317,7 @@ export const SettingsStorage = {
       cancellationPolicy: "24 hours notice required for cancellations. No-shows may be charged a fee.",
       branding: {
         companyLogo: null,
-        companyName: "Vanity Hub",
+        companyName: "Habesha Beauty Salon",
         primaryBrandColor: "#8b5cf6", // Default purple color
         logoAltText: "Company Logo",
         showCompanyNameWithLogo: true

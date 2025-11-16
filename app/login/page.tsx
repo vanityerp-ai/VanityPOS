@@ -78,7 +78,7 @@ export default function LoginPage() {
             <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
               <Scissors className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white">Vanity Hub</h1>
+            <h1 className="text-3xl font-bold text-white">Habesha Beauty Salon</h1>
           </div>
           <p className="text-white/90 text-lg max-w-md">
             Professional salon management system designed for modern beauty businesses

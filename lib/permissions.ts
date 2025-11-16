@@ -80,6 +80,7 @@ export const PERMISSIONS = {
   CREATE_INVENTORY: 'create_inventory',
   EDIT_INVENTORY: 'edit_inventory',
   DELETE_INVENTORY: 'delete_inventory',
+  TRANSFER_INVENTORY: 'transfer_inventory',
 
   // POS permissions
   VIEW_POS: 'view_pos',
@@ -222,6 +223,15 @@ export const ROLE_PERMISSIONS = {
     // Gift Card & Membership permissions
     PERMISSIONS.VIEW_GIFT_CARDS, PERMISSIONS.CREATE_GIFT_CARD, PERMISSIONS.REDEEM_GIFT_CARD,
     PERMISSIONS.VIEW_MEMBERSHIPS, PERMISSIONS.CREATE_MEMBERSHIP,
+  ],
+
+  // Online Store Receptionist has very limited permissions - POS and Inventory only
+  ONLINE_STORE_RECEPTIONIST: [
+    // NO appointment access - online store doesn't handle appointments
+    // NO client management - online orders are handled automatically
+    PERMISSIONS.VIEW_INVENTORY, PERMISSIONS.CREATE_INVENTORY, PERMISSIONS.TRANSFER_INVENTORY,
+    PERMISSIONS.VIEW_POS, PERMISSIONS.CREATE_SALE,
+    PERMISSIONS.VIEW_CHAT, PERMISSIONS.SEND_MESSAGES, PERMISSIONS.SEND_PRODUCT_REQUESTS, PERMISSIONS.SEND_HELP_REQUESTS,
   ],
 
   // Staff has very limited permissions (NO dashboard access - only Admins)

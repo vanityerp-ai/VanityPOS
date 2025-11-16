@@ -47,7 +47,15 @@ interface ProductLocation {
 }
 
 export default function InventoryPage() {
-  const { currentLocation, hasPermission } = useAuth()
+  const { currentLocation, hasPermission, user } = useAuth()
+
+  // Check if user is online store receptionist (restricted permissions)
+  const jobRole = (user as any)?.jobRole
+  const isOnlineStoreReceptionist = jobRole === "online_store_receptionist"
+
+  // Online store receptionist can only add and transfer, not edit
+  const canEditInventory = hasPermission("edit_inventory") && !isOnlineStoreReceptionist
+  const canTransferInventory = hasPermission("transfer_inventory") || hasPermission("create_inventory")
 
   // Check if user has permission to view inventory page
   if (!hasPermission("view_inventory")) {
@@ -568,26 +576,30 @@ export default function InventoryPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button
-            variant="outline"
-            onClick={addStockToAllLocations}
-            disabled={isSeeding}
-            title="Add 10 stock to all locations for all products"
-          >
-            {isSeeding ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Package className="mr-2 h-4 w-4" />
-            )}
-            Add Stock
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsCategoryManagementDialogOpen(true)}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Manage Categories
-          </Button>
+          {canEditInventory && (
+            <>
+              <Button
+                variant="outline"
+                onClick={addStockToAllLocations}
+                disabled={isSeeding}
+                title="Add 10 stock to all locations for all products"
+              >
+                {isSeeding ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Package className="mr-2 h-4 w-4" />
+                )}
+                Add Stock
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsCategoryManagementDialogOpen(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Manage Categories
+              </Button>
+            </>
+          )}
           {hasPermission("create_inventory") && (
             <Button onClick={() => setIsNewProductDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -732,18 +744,24 @@ export default function InventoryPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex gap-1 justify-end">
-                                <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)} title="Edit product">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleMultiLocationStockEdit(product)} title="Edit stock for all locations">
-                                  <Package className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleAdjustStock(product)} title="Adjust stock (single location)">
-                                  Adjust
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleTransferProduct(product)} title="Transfer stock">
-                                  <ArrowRightLeft className="h-4 w-4" />
-                                </Button>
+                                {canEditInventory && (
+                                  <>
+                                    <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)} title="Edit product">
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleMultiLocationStockEdit(product)} title="Edit stock for all locations">
+                                      <Package className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleAdjustStock(product)} title="Adjust stock (single location)">
+                                      Adjust
+                                    </Button>
+                                  </>
+                                )}
+                                {canTransferInventory && (
+                                  <Button variant="ghost" size="sm" onClick={() => handleTransferProduct(product)} title="Transfer stock">
+                                    <ArrowRightLeft className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>

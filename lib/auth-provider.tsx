@@ -187,6 +187,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return [PERMISSIONS.ALL]
     }
 
+    // Check if user has a jobRole (for staff members with specific job roles)
+    // This allows us to have different permissions for different job types
+    const jobRole = (user as any).jobRole
+    if (jobRole) {
+      const jobRoleKey = jobRole.toUpperCase() as keyof typeof ROLE_PERMISSIONS
+      if (ROLE_PERMISSIONS[jobRoleKey]) {
+        console.log(`✅ Using permissions for job role "${jobRole}":`, ROLE_PERMISSIONS[jobRoleKey])
+        return ROLE_PERMISSIONS[jobRoleKey]
+      }
+    }
+
     // First, try to get custom permissions from settings
     const storedRoles = SettingsStorage.getRoles()
 

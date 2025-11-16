@@ -174,18 +174,35 @@ export function EnhancedSalonCalendar({
   // Get ACTIVE staff for the selected location using the provider's built-in filtering (excludes inactive/on-leave)
   let locationStaff = getActiveStaffByLocation(currentLocation);
   // Exclude admins, managers, and receptionists from locationStaff
+  // Check jobRole field (not role) since StaffMember uses jobRole
   locationStaff = locationStaff.filter(staff => {
-    const role = (staff.role || "").toUpperCase();
-    return role !== "ADMIN" && role !== "MANAGER" && role !== "SUPER_ADMIN";
+    const jobRole = (staff.jobRole || "").toLowerCase().trim();
+    // Exclude receptionists, online store receptionist, and admin roles from calendar columns
+    // These roles don't provide direct services to clients
+    const excludedRoles = [
+      "receptionist",
+      "online_store_receptionist",
+      "admin",
+      "manager",
+      "super_admin"
+    ];
+    return !excludedRoles.includes(jobRole);
   });
 
   // Filter staff columns based on permissions
   // If user only has "view_own_appointments" (not "view_appointments"), show only their column
+  // BUT: Receptionists, Managers, and Admins should see ALL staff at their location
   const hasViewAllPermission = hasPermission("view_appointments")
   const hasViewOwnPermission = hasPermission("view_own_appointments")
 
-  if (!hasViewAllPermission && hasViewOwnPermission && user) {
-    // User can only see their own column
+  // Check if user is a receptionist, manager, or admin (they should see all staff)
+  const userJobRole = (user as any)?.jobRole?.toLowerCase() || "";
+  const isReceptionist = userJobRole === "receptionist";
+  const isManager = userJobRole === "manager" || user?.role === "MANAGER";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+
+  if (!hasViewAllPermission && hasViewOwnPermission && user && !isReceptionist && !isManager && !isAdmin) {
+    // Regular staff can only see their own column
     console.log(`🔒 Attempting to filter staff columns for user "${user.name}" (ID: ${user.id})`)
     console.log(`📋 Available staff before filtering:`, locationStaff.map(s => ({ id: s.id, name: s.name })))
 

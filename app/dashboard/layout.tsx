@@ -18,6 +18,7 @@ import { ChatNotifications } from "@/components/chat/chat-notifications"
 import { ChatInterface } from "@/components/chat/chat-interface"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { AppointmentNotificationHandler } from "@/components/notifications/appointment-notification-handler"
+import { ProductSaleNotificationHandler } from "@/components/notifications/product-sale-notification-handler"
 import { DashboardLogo } from "@/components/ui/logo"
 
 
@@ -90,6 +91,9 @@ export default function DashboardLayout({
             window.location.href = `/dashboard/appointments?highlight=${appointmentId}`
           }}
         />
+
+        {/* Product Sale Notification Handler */}
+        <ProductSaleNotificationHandler />
       </div>
     </AdminThemeProvider>
   )

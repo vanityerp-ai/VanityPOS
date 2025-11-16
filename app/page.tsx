@@ -58,7 +58,7 @@ export default function Home() {
                   </Badge>
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
                     <span className="bg-gradient-to-r from-primary to-purple-600 text-transparent bg-clip-text">
-                      Vanity
+                      Habesha Beauty Salon
                     </span>{" "}
                     - Beauty scheduling that works for you
                   </h1>

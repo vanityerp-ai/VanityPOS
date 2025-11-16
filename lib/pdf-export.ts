@@ -238,9 +238,9 @@ export async function exportTransactionToPDF(transaction: Transaction) {
     yPosition = doc.internal.pageSize.height - 40
     doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
-    doc.text('Thank you for choosing Vanity Hair & Beauty!', pageWidth / 2, yPosition, { align: 'center' })
+    doc.text('Thank you for choosing Habesha Beauty Salon!', pageWidth / 2, yPosition, { align: 'center' })
     yPosition += 4
-    doc.text('Follow us @VanityQatar | www.vanitysalon.qa', pageWidth / 2, yPosition, { align: 'center' })
+    doc.text('Follow us @HabeshaBeauty | www.habeshabeauty.com', pageWidth / 2, yPosition, { align: 'center' })
     yPosition += 8
     doc.text(`Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth / 2, yPosition, { align: 'center' })
 
@@ -451,8 +451,8 @@ export function exportTransactionToHTMLPDF(transaction: Transaction) {
       </div>` : ''}
 
       <div class="footer">
-        <div>Thank you for choosing Vanity Hair & Beauty!</div>
-        <div>Follow us @VanityQatar | www.vanitysalon.qa</div>
+        <div>Thank you for choosing Habesha Beauty Salon!</div>
+        <div>Follow us @HabeshaBeauty | www.habeshabeauty.com</div>
         <div style="margin-top: 10px;">Generated on ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
       </div>
 

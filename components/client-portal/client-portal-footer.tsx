@@ -18,9 +18,9 @@ export function ClientPortalFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-bold text-lg">
-              {businessSettings?.businessName?.[0]?.toUpperCase() || 'V'}
+              {businessSettings?.businessName?.[0]?.toUpperCase() || 'H'}
             </div>
-            <h2 className="text-lg font-bold">{businessSettings?.businessName || 'Vanity Hub'}</h2>
+            <h2 className="text-lg font-bold">{businessSettings?.businessName || 'Habesha Beauty Salon'}</h2>
           </div>
 
           <div className="flex flex-wrap justify-center gap-6">

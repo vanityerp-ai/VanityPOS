@@ -31,21 +31,47 @@ export class ConsolidatedTransactionService {
     if (!appointment) {
       throw new Error('Appointment data is required');
     }
-    
+
     if (!appointment.id) {
       throw new Error('Appointment ID is required');
     }
-    
+
     if (!appointment.clientName) {
       throw new Error('Client name is required');
     }
-    
-    if (!appointment.service) {
-      throw new Error('Service is required');
+
+    // Check if appointment has service or additional services or products
+    const hasService = appointment.service && appointment.service.trim() !== '';
+    const hasAdditionalServices = appointment.additionalServices && appointment.additionalServices.length > 0;
+    const hasProducts = appointment.products && appointment.products.length > 0;
+
+    if (!hasService && !hasAdditionalServices && !hasProducts) {
+      throw new Error('Service, additional services, or products are required');
     }
-    
+
+    // If no main service but has additional services, use the first additional service as main
+    if (!hasService && hasAdditionalServices) {
+      appointment.service = appointment.additionalServices[0].name;
+      appointment.price = appointment.additionalServices[0].price || 0;
+    }
+
+    // If still no price, check if we can calculate from additional services or products
     if (!appointment.price || appointment.price <= 0) {
-      throw new Error('Valid price is required');
+      let calculatedPrice = 0;
+
+      if (hasAdditionalServices) {
+        calculatedPrice += appointment.additionalServices.reduce((sum: number, s: any) => sum + (s.price || 0), 0);
+      }
+
+      if (hasProducts) {
+        calculatedPrice += appointment.products.reduce((sum: number, p: any) => sum + ((p.price || 0) * (p.quantity || 1)), 0);
+      }
+
+      if (calculatedPrice <= 0) {
+        throw new Error('Valid price is required');
+      }
+
+      appointment.price = calculatedPrice;
     }
     // Determine prefix based on source
     let prefix = 'PX-';
@@ -59,11 +85,12 @@ export class ConsolidatedTransactionService {
     let serviceAmount = 0;
     let productAmount = 0;
     let originalServiceAmount = 0;
+    let itemIndex = 0; // Counter to ensure unique IDs
 
     // Process main service
     if (appointment.service && appointment.price) {
       const serviceItem: TransactionItem = {
-        id: `service-${appointment.service.toLowerCase().replace(/\s+/g, '-')}`,
+        id: `service-${itemIndex++}-${appointment.service.toLowerCase().replace(/\s+/g, '-')}`,
         name: appointment.service,
         quantity: 1,
         unitPrice: appointment.price,
@@ -93,7 +120,7 @@ export class ConsolidatedTransactionService {
     if (appointment.additionalServices && appointment.additionalServices.length > 0) {
       appointment.additionalServices.forEach((service: any) => {
         const serviceItem: TransactionItem = {
-          id: `service-${service.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: `service-${itemIndex++}-${service.name.toLowerCase().replace(/\s+/g, '-')}`,
           name: service.name,
           quantity: 1,
           unitPrice: service.price,
@@ -124,7 +151,7 @@ export class ConsolidatedTransactionService {
     if (appointment.products && appointment.products.length > 0) {
       appointment.products.forEach((product: any) => {
         const productItem: TransactionItem = {
-          id: product.id || `product-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: product.id || `product-${itemIndex++}-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
           name: product.name,
           quantity: product.quantity || 1,
           unitPrice: product.price,
@@ -245,12 +272,13 @@ export class ConsolidatedTransactionService {
     let serviceAmount = 0;
     let productAmount = 0;
     let originalServiceAmount = 0;
+    let itemIndex = 0; // Counter to ensure unique IDs
 
     // Process booking items
     if (booking.items && booking.items.length > 0) {
       booking.items.forEach((item: any) => {
         const transactionItem: TransactionItem = {
-          id: item.id || `item-${item.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: item.id || `item-${itemIndex++}-${item.name.toLowerCase().replace(/\s+/g, '-')}`,
           name: item.name,
           quantity: 1,
           unitPrice: item.price,

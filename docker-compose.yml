@@ -4,12 +4,12 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: vanity-hub-postgres
+    container_name: habesha-beauty-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: vanity_hub
-      POSTGRES_USER: vanity_user
-      POSTGRES_PASSWORD: vanity_password
+      POSTGRES_DB: habesha_beauty
+      POSTGRES_USER: habesha_user
+      POSTGRES_PASSWORD: habesha_password
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
@@ -17,9 +17,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
-      - vanity-network
+      - habesha-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vanity_user -d vanity_hub"]
+      test: ["CMD-SHELL", "pg_isready -U habesha_user -d habesha_beauty"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,14 +27,14 @@ services:
   # Redis for Caching and Sessions
   redis:
     image: redis:7-alpine
-    container_name: vanity-hub-redis
+    container_name: habesha-beauty-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - vanity-network
+      - habesha-network
     command: redis-server --appendonly yes --requirepass redis_password
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
@@ -45,10 +45,10 @@ services:
   # pgAdmin for Database Management (Development only)
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: vanity-hub-pgadmin
+    container_name: habesha-beauty-pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@vanityhub.com
+      PGADMIN_DEFAULT_EMAIL: admin@habeshabeauty.com
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
@@ -56,7 +56,7 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - vanity-network
+      - habesha-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,14 +66,14 @@ services:
   # Redis Commander for Redis Management (Development only)
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: vanity-hub-redis-commander
+    container_name: habesha-beauty-redis-commander
     restart: unless-stopped
     environment:
       REDIS_HOSTS: local:redis:6379:0:redis_password
     ports:
       - "8081:8081"
     networks:
-      - vanity-network
+      - habesha-network
     depends_on:
       redis:
         condition: service_healthy
@@ -89,5 +89,5 @@ volumes:
     driver: local
 
 networks:
-  vanity-network:
+  habesha-network:
     driver: bridge

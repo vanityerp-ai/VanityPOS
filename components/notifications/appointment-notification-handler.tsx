@@ -26,8 +26,16 @@ export function AppointmentNotificationHandler({
   useRealTimeEvent(
     RealTimeEventType.APPOINTMENT_CREATED,
     (payload, event) => {
-      // Only show notifications for admin users
-      if (!user || user.role !== "ADMIN") {
+      if (!user) return
+
+      // Determine if user should receive this notification
+      const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+      const isManager = user.role === "MANAGER"
+      const isInvolvedStaff = payload.appointment?.staffId === user.id
+
+      // Admin, Super Admin, and Managers get all appointment notifications
+      // Staff only get notifications for their own appointments
+      if (!isAdmin && !isManager && !isInvolvedStaff) {
         return
       }
 
@@ -113,8 +121,16 @@ export function AppointmentNotificationHandler({
   useRealTimeEvent(
     RealTimeEventType.APPOINTMENT_STATUS_CHANGED,
     (payload, event) => {
-      // Only show notifications for admin users
-      if (!user || user.role !== "ADMIN") {
+      if (!user) return
+
+      // Determine if user should receive this notification
+      const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+      const isManager = user.role === "MANAGER"
+      const isInvolvedStaff = payload.appointment?.staffId === user.id
+
+      // Admin, Super Admin, and Managers get all status change notifications
+      // Staff only get notifications for their own appointments
+      if (!isAdmin && !isManager && !isInvolvedStaff) {
         return
       }
 

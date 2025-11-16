@@ -32,9 +32,19 @@ export function SalonCalendarView({ onAddAppointment }: SalonCalendarViewProps) 
   // Get REAL ACTIVE staff for the current location - NO mock data (excludes inactive/on-leave)
   let availableStaff = getActiveStaffByLocation(currentLocation);
   // Exclude admins, managers, and receptionists from availableStaff
+  // Check jobRole field (not role) since StaffMember uses jobRole
   availableStaff = availableStaff.filter(staff => {
-    const role = (staff.role || "").toUpperCase();
-    return role !== "ADMIN" && role !== "MANAGER" && role !== "SUPER_ADMIN";
+    const jobRole = (staff.jobRole || "").toLowerCase().trim();
+    // Exclude receptionists, online store receptionist, and admin roles from calendar columns
+    // These roles don't provide direct services to clients
+    const excludedRoles = [
+      "receptionist",
+      "online_store_receptionist",
+      "admin",
+      "manager",
+      "super_admin"
+    ];
+    return !excludedRoles.includes(jobRole);
   });
 
   // Debug log to verify we're using REAL staff data from HR system
