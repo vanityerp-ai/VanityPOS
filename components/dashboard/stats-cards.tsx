@@ -261,6 +261,8 @@ export function StatsCards({ dateRange }: StatsCardsProps) {
     })
 
     try {
+      // Sync analytics with latest transactions before calculation
+      integratedAnalyticsService.syncWithTransactionProvider(transactions)
       // Get analytics data for the date range and location
       const analytics = integratedAnalyticsService.getAnalytics(
         dateRange.from,
@@ -300,11 +302,49 @@ export function StatsCards({ dateRange }: StatsCardsProps) {
       const homeServiceServices = analytics.homeServiceServices;
       const homeServiceProducts = analytics.homeServiceProducts;
 
-      const cardRevenue = filteredTxs
+      // Enhanced filtering to ensure we include all relevant transactions
+      const allFilteredTransactions = transactions.filter(t => {
+        // Date range filtering
+        const txDate = new Date(t.date)
+        if (dateRange.from && dateRange.to) {
+          const endOfDay = new Date(dateRange.to)
+          endOfDay.setHours(23, 59, 59, 999)
+          if (txDate < dateRange.from || txDate > endOfDay) {
+            return false
+          }
+        }
+        
+        // Location filtering
+        if (currentLocation !== 'all' && t.location !== currentLocation) {
+          // Special handling for online transactions
+          const isOnlineTransaction = t.source === TransactionSource.CLIENT_PORTAL || 
+                                    t.location === 'online' || 
+                                    t.metadata?.isOnlineTransaction === true
+          
+          if (currentLocation === 'online') {
+            return isOnlineTransaction
+          } else {
+            // For physical locations, exclude online transactions
+            if (isOnlineTransaction) {
+              return false
+            }
+            return t.location === currentLocation
+          }
+        }
+        
+        // Exclude cancelled transactions
+        if (t.status === TransactionStatus.CANCELLED) {
+          return false
+        }
+        
+        return true
+      })
+
+      const cardRevenue = allFilteredTransactions
         .filter((t: { paymentMethod: string }) => t.paymentMethod === 'credit_card')
         .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
 
-      const cashRevenue = filteredTxs
+      const cashRevenue = allFilteredTransactions
         .filter((t: { paymentMethod: string }) => t.paymentMethod === 'cash')
         .reduce((sum: number, t: { amount: number }) => sum + t.amount, 0)
 

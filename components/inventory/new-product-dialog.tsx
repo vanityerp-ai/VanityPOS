@@ -304,7 +304,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
       // Create a mock event to reuse the existing upload logic
       const mockEvent = {
         target: { files: [file], value: '' }
-      } as React.ChangeEvent<HTMLInputElement>
+      } as unknown as React.ChangeEvent<HTMLInputElement>
       handleImageUpload(mockEvent)
     }
   }
@@ -357,7 +357,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
         // Convert string prices to numbers
         retailPrice: formData.retailPrice ? parseFloat(formData.retailPrice) : 0,
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : undefined,
-        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : 0,
+        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
         initialStock: parseInt(formData.initialStock) || 0,
         minStockLevel: parseInt(formData.minStockLevel) || 0,
         maxStockLevel: parseInt(formData.maxStockLevel) || 0,
@@ -367,11 +367,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
       }
 
       // Create location data for the selected location
-      const locationData = [{
-        locationId: formData.selectedLocation,
-        stock: productData.initialStock,
-        price: formData.isRetail ? productData.retailPrice : null
-      }]
+      // Note: We're not passing this to addProduct as the API handles location associations separately
 
       // Create the product using the product provider
       const newProduct = await addProduct({
@@ -383,7 +379,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
         description: formData.description,
         price: productData.retailPrice,
         salePrice: productData.salePrice,
-        cost: productData.costPrice,
+        cost: productData.costPrice !== undefined ? productData.costPrice : undefined,
         stock: productData.initialStock,
         minStock: productData.minStockLevel,
         isRetail: formData.isRetail,
@@ -397,7 +393,6 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
         features: formData.features,
         ingredients: formData.ingredients,
         howToUse: formData.howToUse,
-        locations: locationData,
         location: currentLocation,
       })
 
@@ -538,7 +533,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
                           array.findIndex(c => c.name === category.name) === index
                         )
                         .map((category, index) => (
-                          <SelectItem key={`category-${category.id}-${category.name}-${index}`} value={category.name}>
+                          <SelectItem key={`category-${category.id}-${category.name}`} value={category.name}>
                             {category.name}
                           </SelectItem>
                         ))}
@@ -557,7 +552,7 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
                           array.findIndex(t => t.name === type.name) === index
                         )
                         .map((type, index) => (
-                          <SelectItem key={`type-${type.id}-${type.name}-${index}`} value={type.name}>
+                          <SelectItem key={`type-${type.id}-${type.name}`} value={type.name}>
                             {type.name}
                           </SelectItem>
                         ))}

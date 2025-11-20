@@ -120,7 +120,7 @@ export function AddProductDialog({ open, onOpenChange, bookingId, onProductAdded
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.filter((cat) => cat.isActive).map((category, index) => (
-                  <SelectItem key={`category-${category.id || category.name}-${category.name}-${index}`} value={category.name}>
+                  <SelectItem key={`category-${category.id || category.name}-${category.name}`} value={category.name}>
                     {category.name}
                   </SelectItem>
                 ))}

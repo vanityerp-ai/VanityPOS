@@ -200,11 +200,23 @@ export class IntegratedAnalyticsService {
       let inLocation = true;
       if (locationId && locationId !== 'all') {
         if (locationId === 'online') {
-          // For online location filter, only include client portal transactions
-          inLocation = t.source === TransactionSource.CLIENT_PORTAL && t.location === 'online';
+          // For online location filter, include client portal transactions
+          // Also include transactions marked as online or with online metadata
+          inLocation = t.source === TransactionSource.CLIENT_PORTAL || 
+                      t.location === 'online' || 
+                      t.metadata?.isOnlineTransaction === true;
         } else {
-          // For specific location filter, only include transactions from that location
-          inLocation = t.location === locationId;
+          // For specific location filter, include transactions from that location
+          // But exclude online transactions unless specifically requested
+          const isOnlineTransaction = t.source === TransactionSource.CLIENT_PORTAL || 
+                                    t.location === 'online' || 
+                                    t.metadata?.isOnlineTransaction === true;
+          
+          if (isOnlineTransaction) {
+            inLocation = false;
+          } else {
+            inLocation = t.location === locationId;
+          }
         }
       }
 

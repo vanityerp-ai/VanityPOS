@@ -287,7 +287,7 @@ export function ServicesList({ search }: ServicesListProps) {
                         <div className="flex flex-wrap gap-1">
                           {service.locations.map((loc, index) => (
                             <Badge
-                              key={`${service.id}-${loc}-${index}`}
+                              key={`${service.id}-${loc}`}
                               variant="secondary"
                               className="text-xs"
                             >

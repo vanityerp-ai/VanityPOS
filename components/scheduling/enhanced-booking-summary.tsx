@@ -1194,7 +1194,7 @@ export function EnhancedBookingSummary({
               )}
               <h4 className="font-medium text-sm">Booking Items</h4>
               {booking.items.map((item, index) => (
-                <div key={item.id} className="flex justify-between items-center">
+                <div key={`${item.id}-${index}`} className="flex justify-between items-center">
                   <div className="flex-1">
                     <div className="flex items-center">
                       <Badge variant={item.type === "service" ? "secondary" : "outline"} className="mr-2">

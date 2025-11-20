@@ -20,7 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { useProducts } from "@/lib/product-provider"
-import { ProductCategory, ProductType } from "@/lib/products-data"
+import { ProductCategory } from "@/lib/products-data"
+import { ProductType } from "@/lib/product-provider"
 import { Plus, Edit, Trash2, Package, Database, RefreshCw } from "lucide-react"
 
 interface CategoryManagementDialogProps {
@@ -83,7 +84,7 @@ export function CategoryManagementDialog({ open, onOpenChange }: CategoryManagem
     setActiveTab("category-form")
   }
 
-  const handleEditType = (type: ProductType) => {
+  const handleEditType = (type: import("@/lib/product-provider").ProductType) => {
     setEditingType(type)
     setFormData({
       name: type.name,
@@ -210,7 +211,7 @@ export function CategoryManagementDialog({ open, onOpenChange }: CategoryManagem
     }
   }
 
-  const handleDeleteType = async (type: ProductType) => {
+  const handleDeleteType = async (type: import("@/lib/product-provider").ProductType) => {
     if (window.confirm(`Are you sure you want to delete the product type "${type.name}"?\n\nThis action cannot be undone.`)) {
       try {
         const success = await deleteProductType(type.id)
@@ -571,7 +572,7 @@ export function CategoryManagementDialog({ open, onOpenChange }: CategoryManagem
                     {categories
                       .filter(cat => cat.isActive)
                       .map((category, index) => (
-                        <SelectItem key={`category-${category.id}-${category.name}-${index}`} value={category.name}>
+                        <SelectItem key={`category-${category.id}-${category.name}`} value={category.name}>
                           {category.name}
                         </SelectItem>
                       ))}

@@ -31,7 +31,7 @@ import { useLocations } from "@/lib/location-provider"
 import { useServices } from "@/lib/service-provider"
 import { useApiStaff } from "@/lib/api-staff-service"
 import { realTimeService, RealTimeEventType } from "@/lib/real-time-service"
-import { NotificationService } from "@/lib/notification-service"
+import { NotificationService, NotificationType } from "@/lib/notification-service"
 import {
   Check,
   ChevronLeft,
@@ -246,8 +246,8 @@ export default function BookAppointmentPage() {
     }
 
     if (services.length > 0) {
-      const servicesByCategory = {};
-      const servicesByLocation = {};
+      const servicesByCategory: Record<string, number> = {};
+      const servicesByLocation: Record<string, number> = {};
       services.forEach(service => {
         if (!servicesByCategory[service.category]) {
           servicesByCategory[service.category] = 0;
@@ -263,10 +263,10 @@ export default function BookAppointmentPage() {
             servicesByLocation[loc]++;
           });
         } else {
-          if (!servicesByLocation['no-location']) {
-            servicesByLocation['no-location'] = 0;
+          if (!servicesByLocation["no-location"]) {
+            servicesByLocation["no-location"] = 0;
           }
-          servicesByLocation['no-location']++;
+          servicesByLocation["no-location"]++;
         }
       });
       console.log("Services by category:", servicesByCategory);
@@ -331,7 +331,7 @@ export default function BookAppointmentPage() {
         return service.locations.includes(selectedLocation);
       });
       console.log("Home service available services:", homeServices.length);
-      console.log("Home service categories:", [...new Set(homeServices.map(s => s.category))]);
+      console.log("Home service categories:", Array.from(new Set(homeServices.map(s => s.category))));
       console.log("Selected location ID:", selectedLocation);
       console.log("Sample service locations:", services.slice(0, 2).map(s => ({ name: s.name, locations: s.locations })));
     }
@@ -537,14 +537,13 @@ export default function BookAppointmentPage() {
       const unavailable = staff
         // Filter by status, role and location first
         .filter(member => {
-          // Only check active staff members
+          // Only show active staff members
           if (member.status !== 'Active') {
             return false;
           }
-
           // Exclude admin, super admin, manager, and receptionist roles
-          // Check jobRole field (not role) since StaffMember uses jobRole
-          const jobRole = (member.jobRole || "").toLowerCase().trim();
+          // Check role field
+          const role = (member.role || "").toLowerCase().trim();
           const excludedRoles = [
             "receptionist",
             "online_store_receptionist",
@@ -552,15 +551,16 @@ export default function BookAppointmentPage() {
             "manager",
             "super_admin"
           ];
-          if (excludedRoles.includes(jobRole)) {
+          if (excludedRoles.includes(role)) {
             return false;
           }
-
+          // For home service location, include staff with home service capability
           if (isHomeServiceLocationById(selectedLocation)) {
             return member.homeService === true ||
-                   member.locations.includes(selectedLocation)
+                   member.locations.includes(selectedLocation);
           }
-          return member.locations.includes(selectedLocation)
+          // For regular locations, include staff assigned to that location
+          return member.locations.includes(selectedLocation);
         })
         // Then check availability (conflicts, day-offs only - NO time restrictions)
         .filter(member => {
@@ -1052,6 +1052,7 @@ export default function BookAppointmentPage() {
       const availabilityValidation = await validateStaffAvailability({
         id: `temp-${Date.now()}`, // Temporary ID for validation
         staffId: selectedStaff,
+        staffName: staffDetails?.name || 'Unknown Stylist',
         date: appointmentDate.toISOString(),
         duration: service.duration,
         location: selectedLocation,
@@ -1059,7 +1060,8 @@ export default function BookAppointmentPage() {
         clientName: clientName || client.name,
         service: service.name,
         serviceId: service.id,
-        status: "confirmed"
+        status: "confirmed",
+        type: "appointment"
       })
 
       if (!availabilityValidation.isValid) {
@@ -1314,18 +1316,16 @@ export default function BookAppointmentPage() {
       try {
         // Create a notification for admin users
         const notificationData = {
-          type: 'appointment_created' as const,
+          type: NotificationType.DOCUMENT_EXPIRING,
           title: 'New Appointment Booked',
           message: `${clientName} booked ${service.name} for ${format(selectedDate, "MMM d, yyyy")} at ${selectedTime}`,
-          priority: 'normal' as const,
-          category: 'appointment' as const,
           data: {
             appointmentId: result.appointment.id,
             bookingReference: result.appointment.bookingReference,
             clientName: clientName,
             serviceName: service.name,
-            staffName: staff.name,
-            date: selectedDate,
+            staffName: staffDetails?.name || 'Unknown Stylist',
+            date: selectedDate.toISOString(),
             time: selectedTime,
             location: getLocationName(selectedLocation),
             amount: service.price
@@ -1339,7 +1339,7 @@ export default function BookAppointmentPage() {
         realTimeService.emitEvent(RealTimeEventType.APPOINTMENT_CREATED, {
           appointment: result.appointment,
           clientName: clientName,
-          staffName: staff.name,
+          staffName: staffDetails?.name || 'Unknown Stylist',
           service: service.name,
           date: result.appointment.date,
           location: getLocationName(selectedLocation),
@@ -1973,7 +1973,7 @@ export default function BookAppointmentPage() {
                               ) : (
                                 filteredServices.map((service) => (
                                   <div
-                                    key={service.id}
+                                    key={`all-${service.id}`}
                                     className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                                       selectedService === service.id
                                         ? "border-pink-500 bg-pink-50"
@@ -2001,10 +2001,10 @@ export default function BookAppointmentPage() {
                                         </div>
                                       </div>
                                       <div className="text-right">
-                                        {(service.showPrices ?? true) && (
-                                          <p className="font-medium text-pink-600"><CurrencyDisplay amount={service.price} /></p>
-                                        )}
-                                      </div>
+                                          {(service.hasOwnProperty('showPrices') ? service.showPrices : true) && (
+                                            <p className="font-medium text-pink-600"><CurrencyDisplay amount={service.price} /></p>
+                                          )}
+                                        </div>
                                     </div>
                                   </div>
                                 ))
@@ -2033,7 +2033,7 @@ export default function BookAppointmentPage() {
                                 <div className="grid gap-4">
                                   {categoryServices.map((service) => (
                                     <div
-                                      key={service.id}
+                                      key={`category-${category.id}-${service.id}`}
                                       className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                                         selectedService === service.id
                                           ? "border-pink-500 bg-pink-50"
@@ -2148,7 +2148,7 @@ export default function BookAppointmentPage() {
                             </div>
 
                             {/* Additional service details */}
-                            {serviceDetails.additionalInfo && (
+                            {serviceDetails && serviceDetails.hasOwnProperty('additionalInfo') && serviceDetails.additionalInfo && (
                               <div className="mt-4 pt-4 border-t border-gray-100">
                                 <h4 className="font-medium text-gray-700 mb-2">Additional Information</h4>
                                 <p className="text-sm text-gray-600">{serviceDetails.additionalInfo}</p>
@@ -2201,8 +2201,8 @@ export default function BookAppointmentPage() {
                               return false;
                             }
                             // Exclude admin, super admin, manager, and receptionist roles
-                            // Check jobRole field (not role) since StaffMember uses jobRole
-                            const jobRole = (member.jobRole || "").toLowerCase().trim();
+                            // Check role field
+                            const jobRole = (member.role || "").toLowerCase().trim();
                             const excludedRoles = [
                               "receptionist",
                               "online_store_receptionist",

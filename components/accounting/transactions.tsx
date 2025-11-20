@@ -37,7 +37,7 @@ import { transactionDeduplicationService } from "@/lib/transaction-deduplication
 import { format } from "date-fns"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { TransactionDetailsDialog } from "./transaction-details-dialog"
-import { printReceipt } from "./receipt-printer.ts"
+import { printReceipt } from "./receipt-printer"
 import { exportTransactionToHTMLPDF, exportReportToCSV, exportReportToExcel, exportReportToPDF, prepareTableDataForExport } from "@/lib/pdf-export"
 import { ExportOptionsDialog, type ExportSection, type ExportOptions } from "@/components/reports/export-options-dialog"
 import { useToast } from "@/components/ui/use-toast"
@@ -89,6 +89,7 @@ export function Transactions({
 
     const filters: any = { search }
 
+    // Special handling for location filtering to ensure POS transactions are included
     if (selectedLocation !== "all") {
       filters.location = selectedLocation
     }
@@ -109,7 +110,9 @@ export function Transactions({
     console.log('🔍 TRANSACTIONS COMPONENT: Filtered results:', {
       originalCount: transactions.length,
       filteredCount: filtered.length,
+      posTransactions: filtered.filter(tx => tx.source === TransactionSource.POS).length,
       clientPortalTransactions: filtered.filter(tx => tx.source === TransactionSource.CLIENT_PORTAL).length,
+      calendarTransactions: filtered.filter(tx => tx.source === TransactionSource.CALENDAR).length,
       filters
     });
 

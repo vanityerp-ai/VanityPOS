@@ -299,40 +299,33 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
       console.log(`🔍 Location "${locationId}" - found ${filteredStaff.length} staff assigned to this location`);
     }
 
-    // Apply user access filtering
+    const jobRole = (session?.user as any)?.jobRole?.toLowerCase() || "";
+    const isReceptionistUser = jobRole === "receptionist" || jobRole === "online_store_receptionist";
     if (session?.user && session.user.role !== "ADMIN") {
       const userLocations = session.user.locations || [];
-
-      // If user doesn't have "all" access and has specific locations, filter staff
-      if (!userLocations.includes("all") && userLocations.length > 0) {
-        const beforeCount = filteredStaff.length;
-
-        // For home service location, only admin users can access
-        if (locationId === "home") {
-          if (session?.user?.role === "ADMIN") {
-            filteredStaff = filteredStaff.filter(staffMember => {
-              // Staff must have homeService flag OR be assigned to home service location
-              const hasHomeServiceCapability = staffMember.homeService === true ||
-                staffMember.locations.includes("home") ||
-                (homeServiceLocationId && staffMember.locations.includes(homeServiceLocationId));
-
-              // Staff must also be assigned to at least one of the user's locations
-              const isAssignedToUserLocation = staffMember.locations.some(loc => userLocations.includes(loc));
-
-              return hasHomeServiceCapability && isAssignedToUserLocation;
-            });
+      if (!isReceptionistUser || locationId === "home") {
+        if (!userLocations.includes("all") && userLocations.length > 0) {
+          const beforeCount = filteredStaff.length;
+          if (locationId === "home") {
+            if (session?.user?.role === "ADMIN") {
+              filteredStaff = filteredStaff.filter(staffMember => {
+                const hasHomeServiceCapability = staffMember.homeService === true ||
+                  staffMember.locations.includes("home") ||
+                  (homeServiceLocationId && staffMember.locations.includes(homeServiceLocationId));
+                const isAssignedToUserLocation = staffMember.locations.some(loc => userLocations.includes(loc));
+                return hasHomeServiceCapability && isAssignedToUserLocation;
+              });
+            } else {
+              filteredStaff = [];
+            }
           } else {
-            // Staff users cannot access home service staff
-            filteredStaff = [];
+            filteredStaff = filteredStaff.filter(staffMember =>
+              staffMember.locations.some(loc => userLocations.includes(loc))
+            );
           }
-        } else {
-          filteredStaff = filteredStaff.filter(staffMember =>
-            staffMember.locations.some(loc => userLocations.includes(loc))
-          );
-        }
-
-        if (beforeCount !== filteredStaff.length) {
-          console.log(`🔒 Applied user location filter: ${filteredStaff.length}/${beforeCount} staff visible to user`);
+          if (beforeCount !== filteredStaff.length) {
+            console.log(`🔒 Applied user location filter: ${filteredStaff.length}/${beforeCount} staff visible to user`);
+          }
         }
       }
     }

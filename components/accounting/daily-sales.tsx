@@ -29,7 +29,7 @@ function truncateDescription(description: string, maxLength: number = 20): strin
 import { format, addDays, subDays, isSameDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import { useTransactions } from "@/lib/transaction-provider"
-import { TransactionType, TransactionStatus, PaymentMethod } from "@/lib/transaction-types"
+import { TransactionType, TransactionStatus, PaymentMethod, TransactionSource } from "@/lib/transaction-types"
 
 interface DailySalesProps {
   dateRange?: DateRange
@@ -72,12 +72,51 @@ export function DailySales({
       singleDate: currentDate
     }
 
+    // Ensure we're including POS transactions
+    // Remove any source filter that might be excluding POS transactions
     if (selectedLocation !== "all") {
       filters.location = selectedLocation
     }
 
-    return filterTransactions(filters)
-  }, [currentDate, selectedLocation, filterTransactions])
+    console.log('📊 DAILY SALES: About to filter transactions with filters:', filters);
+    console.log('📊 DAILY SALES: Total transactions before filtering:', transactions.length);
+    
+    const filteredTransactions = filterTransactions(filters)
+    
+    console.log('📊 DAILY SALES: Filtering transactions', {
+      totalTransactions: transactions.length,
+      filteredCount: filteredTransactions.length,
+      currentDate: currentDate.toISOString(),
+      selectedLocation,
+      filtersApplied: filters,
+      posTransactions: filteredTransactions.filter(tx => tx.source === TransactionSource.POS).length,
+      posTransactionDetails: filteredTransactions.filter(tx => tx.source === TransactionSource.POS).map(tx => ({
+        id: tx.id,
+        amount: tx.amount,
+        type: tx.type,
+        source: tx.source,
+        location: tx.location,
+        description: tx.description
+      }))
+    })
+
+    // Additional debugging to ensure POS transactions are not being filtered out
+    const allPOSTransactions = transactions.filter(tx => tx.source === TransactionSource.POS);
+    const filteredPOSTransactions = filteredTransactions.filter(tx => tx.source === TransactionSource.POS);
+    
+    if (allPOSTransactions.length > 0 && filteredPOSTransactions.length === 0) {
+      console.warn('⚠️ DAILY SALES: All POS transactions are being filtered out!');
+      console.log('📊 DAILY SALES: All POS transactions:', allPOSTransactions.map(tx => ({
+        id: tx.id,
+        date: tx.date,
+        amount: tx.amount,
+        location: tx.location,
+        clientId: tx.clientId
+      })));
+    }
+
+    return filteredTransactions
+  }, [currentDate, selectedLocation, filterTransactions, transactions])
 
   // Calculate transaction summary data
   const transactionSummary = useMemo(() => {
@@ -107,6 +146,15 @@ export function DailySales({
 
     dailyTransactions.forEach(tx => {
       const breakdown = transactionDeduplicationService.calculateRevenueBreakdown(tx);
+      console.log('📊 DAILY SALES: Transaction breakdown', {
+        transactionId: tx.id,
+        source: tx.source,
+        type: tx.type,
+        amount: tx.amount,
+        serviceRevenue: breakdown.serviceRevenue,
+        productRevenue: breakdown.productRevenue
+      });
+      
       // Services
       if (breakdown.serviceRevenue > 0) {
         if (tx.status === TransactionStatus.REFUNDED || tx.type === TransactionType.REFUND) {
@@ -152,6 +200,15 @@ export function DailySales({
       }
     });
 
+    console.log('📊 DAILY SALES: Revenue summary', {
+      serviceRevenue,
+      productRevenue,
+      serviceSales,
+      productSales,
+      serviceRefunds,
+      productRefunds
+    });
+
     // Push Services and Products with improved logic
     summary.push({
       itemType: 'Services',
@@ -163,7 +220,8 @@ export function DailySales({
       itemType: 'Products',
       salesQty: productSales,
       refundQty: productRefunds,
-      grossTotal: productRevenue
+      grossTotal: productRevenue,
+      productRevenue: productRevenue // Add this for clarity
     });
     // Push other categories
     standardCategories.slice(2).forEach(category => {

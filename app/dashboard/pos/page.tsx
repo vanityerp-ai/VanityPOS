@@ -195,6 +195,16 @@ export default function POSPage() {
           }
         )
 
+  // Debug: Check for duplicate service IDs
+  if (activeTab === "services") {
+    const serviceIds = filteredItems.map(s => s.id);
+    const uniqueServiceIds = [...new Set(serviceIds)];
+    if (serviceIds.length !== uniqueServiceIds.length) {
+      console.warn('Duplicate service IDs detected:', serviceIds);
+      console.warn('Unique service IDs:', uniqueServiceIds);
+    }
+  }
+
   // Get checkout settings for dynamic tax rate
   const checkoutSettings = SettingsStorage.getCheckoutSettings()
 
@@ -384,6 +394,7 @@ export default function POSPage() {
         };
         transactions.push(productTransaction);
         console.log('[POS] Created product transaction:', productTransaction);
+        console.log('[POS] Product transaction location:', productTransaction.location);
       }
       
       // Create service sale transaction if there are services
@@ -419,13 +430,29 @@ export default function POSPage() {
         };
         transactions.push(serviceTransaction);
         console.log('[POS] Created service transaction:', serviceTransaction);
+        console.log('[POS] Service transaction location:', serviceTransaction.location);
       }
 
       // Add all transactions to the provider
       console.log('[POS] Adding transactions to provider:', transactions.length);
       transactions.forEach(transaction => {
+        console.log('[POS] Adding transaction to provider:', {
+          id: transaction.id,
+          type: transaction.type,
+          source: transaction.source,
+          amount: transaction.amount,
+          description: transaction.description
+        });
         addTransaction(transaction);
       });
+      
+      // Log all transactions that were added
+      console.log('[POS] All transactions added to provider:', transactions.map(t => ({
+        id: t.id,
+        type: t.type,
+        source: t.source,
+        amount: t.amount
+      })));
 
       // Store the last completed transaction for printing
       setLastTransaction(transactions[0]); // Or use the main transaction as needed
@@ -647,25 +674,29 @@ export default function POSPage() {
                 {/* Services Grid */}
                 <div className="p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {filteredItems.map((service) => (
-                      <Card key={service.id} className="overflow-hidden">
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base">{service.name}</CardTitle>
-                          <CardDescription>
-                            <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full mr-2">
-                              {categories.find(cat => cat.id === service.category)?.name || service.category}
-                            </span>
-                            {service.type === 'service' && (service as any).duration} min
-                          </CardDescription>
-                        </CardHeader>
-                        <CardFooter className="p-4 pt-2 flex justify-between">
-                          <p className="font-medium"><CurrencyDisplay amount={service.price} /></p>
-                          <Button size="sm" onClick={() => addToCart(service, "service")}>
-                            <Plus className="h-4 w-4 mr-1" /> Add
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
+                    {filteredItems.map((service, index) => {
+                      // Create a unique key to prevent duplicates
+                      const uniqueKey = `${service.id}-${index}`;
+                      return (
+                        <Card key={uniqueKey} className="overflow-hidden">
+                          <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-base">{service.name}</CardTitle>
+                            <CardDescription>
+                              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full mr-2">
+                                {categories.find(cat => cat.id === service.category)?.name || service.category}
+                              </span>
+                              {service.type === 'service' && (service as any).duration} min
+                            </CardDescription>
+                          </CardHeader>
+                          <CardFooter className="p-4 pt-2 flex justify-between">
+                            <p className="font-medium"><CurrencyDisplay amount={service.price} /></p>
+                            <Button size="sm" onClick={() => addToCart(service, "service")}>
+                              <Plus className="h-4 w-4 mr-1" /> Add
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
 
                     {filteredItems.length === 0 && (
                       <div className="col-span-full text-center py-8 text-muted-foreground">
@@ -721,29 +752,33 @@ export default function POSPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {filteredItems.map((product) => (
-                        <Card key={product.id} className="overflow-hidden">
-                          <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-base">{product.name}</CardTitle>
-                            <CardDescription>
-                              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full mr-2">
-                                {product.category}
-                              </span>
-                              {product.type === 'product' && `In stock: ${(product as any).stock}`}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardFooter className="p-4 pt-2 flex justify-between">
-                            <p className="font-medium"><CurrencyDisplay amount={product.price} /></p>
-                            <Button
-                              size="sm"
-                              onClick={() => addToCart(product, "product")}
-                              disabled={product.type === 'product' && (product as any).stock <= 0}
-                            >
-                              <Plus className="h-4 w-4 mr-1" /> Add
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      ))}
+                      {filteredItems.map((product, index) => {
+                        // Create a unique key to prevent duplicates
+                        const uniqueKey = `${product.id}-${index}`;
+                        return (
+                          <Card key={uniqueKey} className="overflow-hidden">
+                            <CardHeader className="p-4 pb-2">
+                              <CardTitle className="text-base">{product.name}</CardTitle>
+                              <CardDescription>
+                                <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full mr-2">
+                                  {product.category}
+                                </span>
+                                {product.type === 'product' && `In stock: ${(product as any).stock}`}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardFooter className="p-4 pt-2 flex justify-between">
+                              <p className="font-medium"><CurrencyDisplay amount={product.price} /></p>
+                              <Button
+                                size="sm"
+                                onClick={() => addToCart(product, "product")}
+                                disabled={product.type === 'product' && (product as any).stock <= 0}
+                              >
+                                <Plus className="h-4 w-4 mr-1" /> Add
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        );
+                      })}
 
                       {filteredItems.length === 0 && !isLoadingProducts && !productError && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">

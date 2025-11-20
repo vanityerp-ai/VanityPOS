@@ -439,8 +439,8 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         description: transaction.description || `${transaction.category} - ${transaction.description || ''}`,
         locationId: transaction.location || null,
         appointmentId: transaction.reference?.type === 'appointment' ? transaction.reference.id : null,
-        serviceAmount: transaction.type === 'SERVICE_SALE' || transaction.type === 'CONSOLIDATED_SALE' ? transaction.serviceAmount || transaction.amount : null,
-        productAmount: transaction.type === 'PRODUCT_SALE' || transaction.type === 'CONSOLIDATED_SALE' ? transaction.productAmount || transaction.amount : null,
+        serviceAmount: transaction.type === TransactionType.SERVICE_SALE || transaction.type === TransactionType.CONSOLIDATED_SALE ? transaction.serviceAmount || transaction.amount : null,
+        productAmount: transaction.type === TransactionType.PRODUCT_SALE || transaction.type === TransactionType.CONSOLIDATED_SALE ? transaction.productAmount || transaction.amount : null,
         originalServiceAmount: transaction.metadata?.originalServiceAmount || null,
         discountPercentage: transaction.metadata?.discountPercentage || null,
         discountAmount: transaction.metadata?.discountAmount || null,
@@ -619,17 +619,28 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 
       // Filter by location with proper handling for online vs physical locations
       if (filter.location && filter.location !== 'all' && tx.location !== filter.location) {
+        console.log('🔍 LOCATION FILTER: Transaction location mismatch', {
+          transactionId: tx.id,
+          txLocation: tx.location,
+          filterLocation: filter.location,
+          txSource: tx.source,
+          willBeFiltered: true
+        });
+        
         // Identify online transactions
         const isClientPortalTransaction = tx.source === TransactionSource.CLIENT_PORTAL;
-
-        const isOnlineTransaction = tx.location === 'online' ||
+        
+        // Enhanced identification of online transactions
+        const isOnlineTransaction = tx.source === TransactionSource.CLIENT_PORTAL ||
+                                  tx.source === TransactionSource.ONLINE ||
+                                  tx.location === 'online' ||
                                   tx.location === 'client_portal' ||
                                   tx.metadata?.isOnlineTransaction === true;
-
+        
         const hasNoLocation = !tx.location || tx.location === null || tx.location === undefined;
-
+        
         const isOnlineRelated = isClientPortalTransaction || isOnlineTransaction || hasNoLocation;
-
+        
         if (isOnlineRelated) {
           // Online transactions should ONLY appear when filtering by "online" location
           if (filter.location === 'online') {
@@ -641,6 +652,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
               reason: 'Online transaction matches online location filter'
             });
             // Keep the transaction - it matches the online filter
+            return true;
           } else {
             console.log('🔍 Online transaction excluded from physical location filter:', {
               transactionId: tx.id,
@@ -654,6 +666,20 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
           }
         } else {
           // Physical location transaction that doesn't match the filter
+          // BUT we should still include POS transactions in physical locations
+          if (tx.source === TransactionSource.POS) {
+            console.log('🔍 POS transaction included in physical location filter:', {
+              transactionId: tx.id,
+              txLocation: tx.location,
+              filterLocation: filter.location,
+              txSource: tx.source,
+              willBeFiltered: false,
+              reason: 'POS transaction included in physical location'
+            });
+            // Include POS transactions in physical locations
+            return true;
+          }
+          
           console.log('🔍 Physical location transaction check:', {
             transactionId: tx.id,
             txLocation: tx.location,

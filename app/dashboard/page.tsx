@@ -48,9 +48,13 @@ export default function DashboardPage() {
   const router = useRouter()
   const documentAlertCounts = useDocumentAlertCounts()
   const inventoryAlertCounts = useInventoryAlertCounts()
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: new Date(),
-    to: new Date()
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const now = new Date()
+    const start = new Date(now)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(now)
+    end.setHours(23, 59, 59, 999)
+    return { from: start, to: end }
   })
 
   const [activeTab, setActiveTab] = useState("overview")

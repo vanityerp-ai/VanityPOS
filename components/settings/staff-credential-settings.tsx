@@ -35,7 +35,8 @@ import {
   EyeOff,
   MapPin,
   TestTube,
-  Loader2
+  Loader2,
+  Trash2
 } from "lucide-react"
 
 interface StaffMember {
@@ -76,21 +77,33 @@ export function StaffCredentialSettings() {
     fetchStaffCredentials,
     fetchLocations,
     createCredentials,
+    createManualCredentials,
     resetPassword,
     updateLocations,
     toggleActive,
-    generateTestCredentials
+    generateTestCredentials,
+    updatePassword,
+    deleteCredentials
   } = useStaffCredentials()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false)
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false)
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null)
   const [selectedLocations, setSelectedLocations] = useState<string[]>([])
   const [showPassword, setShowPassword] = useState(false)
   const [generatedCredentials, setGeneratedCredentials] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [manualMode, setManualMode] = useState(false)
+  const [manualUsername, setManualUsername] = useState("")
+  const [manualPassword, setManualPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   // Fetch staff and locations data
   useEffect(() => {
@@ -110,8 +123,21 @@ export function StaffCredentialSettings() {
 
     try {
       setIsSubmitting(true)
-      const credentials = await createCredentials(selectedStaff.id, selectedLocations)
-      setGeneratedCredentials(credentials)
+      if (manualMode) {
+        if (!manualUsername || !manualPassword) {
+          toast({
+            title: "Error",
+            description: "Enter username and password for manual creation",
+            variant: "destructive"
+          })
+          return
+        }
+        await createManualCredentials(selectedStaff.id, selectedLocations, manualUsername, manualPassword)
+        setGeneratedCredentials({ username: manualUsername, temporaryPassword: null })
+      } else {
+        const credentials = await createCredentials(selectedStaff.id, selectedLocations)
+        setGeneratedCredentials(credentials)
+      }
     } catch (error) {
       // Error handling is done in the hook
     } finally {
@@ -170,6 +196,55 @@ export function StaffCredentialSettings() {
       await toggleActive(staffMember.id)
     } catch (error) {
       // Error handling is done in the hook
+    }
+  }
+
+  const validateNewPassword = (pwd: string) => {
+    const errors: string[] = []
+    if (pwd.length < 8) errors.push("At least 8 characters")
+    if (!/[A-Z]/.test(pwd)) errors.push("One uppercase letter")
+    if (!/[a-z]/.test(pwd)) errors.push("One lowercase letter")
+    if (!/\d/.test(pwd)) errors.push("One number")
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) errors.push("One special character")
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  const handleUpdatePassword = async () => {
+    if (!selectedStaff) return
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match")
+      return
+    }
+    const validation = validateNewPassword(newPassword)
+    if (!validation.isValid) {
+      setPasswordError(`Password must include: ${validation.errors.join(', ')}`)
+      return
+    }
+    try {
+      setIsSubmitting(true)
+      await updatePassword(selectedStaff.id, newPassword)
+      setIsPasswordDialogOpen(false)
+      setNewPassword("")
+      setConfirmPassword("")
+      setPasswordError(null)
+    } catch (error) {
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteCredentials = async () => {
+    if (!selectedStaff) return
+    try {
+      setIsSubmitting(true)
+      await deleteCredentials(selectedStaff.id)
+      setIsDeleteDialogOpen(false)
+    } catch (error) {
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -353,24 +428,51 @@ export function StaffCredentialSettings() {
                       <DropdownMenuContent align="end">
                         {member.hasCredentials ? (
                           <>
-                            <DropdownMenuItem onClick={() => handleResetPassword(member)}>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedStaff(member)
-                                setSelectedLocations(member.locations.map(l => l.id))
-                                setIsLocationDialogOpen(true)
-                              }}
-                            >
-                              <MapPin className="h-4 w-4 mr-2" />
-                              Update Locations
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleActive(member)}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              {member.user?.isActive ? 'Deactivate' : 'Activate'}
-                            </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleResetPassword(member)}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Reset Password
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedStaff(member)
+                              setIsPasswordDialogOpen(true)
+                            }}
+                          >
+                            <KeyRound className="h-4 w-4 mr-2" />
+                            Update Password
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedStaff(member)
+                              setSelectedLocations(member.locations.map(l => l.id))
+                              setIsLocationDialogOpen(true)
+                            }}
+                          >
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Update Locations
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedStaff(member)
+                              setIsViewDialogOpen(true)
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedStaff(member)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Credentials
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleActive(member)}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            {member.user?.isActive ? 'Deactivate' : 'Activate'}
+                          </DropdownMenuItem>
                           </>
                         ) : (
                           <DropdownMenuItem
@@ -438,6 +540,29 @@ export function StaffCredentialSettings() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="manual-mode"
+                    checked={manualMode}
+                    onCheckedChange={(checked) => setManualMode(!!checked)}
+                  />
+                  <Label htmlFor="manual-mode" className="text-sm">Enter custom username and password</Label>
+                </div>
+                {manualMode && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Username (email)</Label>
+                      <Input value={manualUsername} onChange={(e) => setManualUsername(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Password</Label>
+                      <Input type="password" value={manualPassword} onChange={(e) => setManualPassword(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {generatedCredentials && (
                 <div className="p-4 bg-muted rounded-lg space-y-2">
                   <h4 className="font-medium text-sm">Generated Credentials</h4>
@@ -448,12 +573,15 @@ export function StaffCredentialSettings() {
                     <div className="flex items-center gap-2">
                       <p className="text-xs">
                         <span className="font-medium">Password:</span>
-                        {showPassword ? generatedCredentials.temporaryPassword : '••••••••'}
+                        {generatedCredentials.temporaryPassword
+                          ? (showPassword ? generatedCredentials.temporaryPassword : '••••••••')
+                          : 'Set manually'}
                       </p>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowPassword(!showPassword)}
+                        disabled={!generatedCredentials.temporaryPassword}
                       >
                         {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       </Button>
@@ -581,6 +709,106 @@ export function StaffCredentialSettings() {
             >
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Update Locations
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Password Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for the selected staff member
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStaff && (
+            <div className="space-y-4">
+              <div>
+                <Label>Staff Member</Label>
+                <p className="text-sm font-medium">{selectedStaff.name}</p>
+                <p className="text-xs text-muted-foreground">{selectedStaff.user?.email}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>New Password</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm Password</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </div>
+              {passwordError && (
+                <p className="text-sm text-destructive">{passwordError}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdatePassword} disabled={isSubmitting || !newPassword || !confirmPassword}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Update Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Staff Credential Details</DialogTitle>
+            <DialogDescription>View current credential and access information</DialogDescription>
+          </DialogHeader>
+          {selectedStaff && (
+            <div className="space-y-4">
+              <div>
+                <Label>Staff Member</Label>
+                <p className="text-sm font-medium">{selectedStaff.name}</p>
+                <p className="text-xs text-muted-foreground">Employee #{selectedStaff.employeeNumber} • {selectedStaff.jobRole}</p>
+              </div>
+              <div>
+                <Label>Login</Label>
+                <p className="text-sm">{selectedStaff.user?.email || '-'}</p>
+                <p className="text-xs text-muted-foreground">Role: {selectedStaff.user?.role || '-'}</p>
+                <p className="text-xs text-muted-foreground">Status: {selectedStaff.user?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+              <div>
+                <Label>Locations</Label>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {selectedStaff.locations.map((location) => (
+                    <Badge key={location.id} variant="outline" className="text-xs">{location.name}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Credentials Confirm Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Credentials</DialogTitle>
+            <DialogDescription>
+              This will delete the user account linked to this staff member. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStaff && (
+            <div className="space-y-2">
+              <p className="text-sm">Staff: <span className="font-medium">{selectedStaff.name}</span></p>
+              <p className="text-xs text-muted-foreground">{selectedStaff.user?.email}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteCredentials} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete Credentials
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -713,7 +713,7 @@ export function EnhancedAppointmentDetailsDialog({
                         {appointment.additionalServices && appointment.additionalServices.length > 0 && (
                           <>
                             {appointment.additionalServices.map((service: any, index: number) => (
-                              <div key={`service-${index}`} className="flex justify-between">
+                              <div key={`service-${service.id || index}-${index}`} className="flex justify-between">
                                 <span>{service.name}</span>
                                 <span><CurrencyDisplay amount={typeof service.price === 'number' ? service.price : 0} /></span>
                               </div>
@@ -735,7 +735,7 @@ export function EnhancedAppointmentDetailsDialog({
                       <h4 className="font-medium">Products</h4>
                       <div className="text-sm text-gray-600 space-y-2 mt-1">
                         {appointment.products.map((product: any, index: number) => (
-                          <div key={`product-${index}`} className="flex justify-between">
+                          <div key={`product-${product.id || index}-${index}`} className="flex justify-between">
                             <span>{product.quantity ? `${product.quantity}x ${product.name}` : product.name}</span>
                             <span><CurrencyDisplay amount={typeof product.price === 'number' ? product.price : 0} /></span>
                           </div>

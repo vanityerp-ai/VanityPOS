@@ -90,7 +90,7 @@ export class ConsolidatedTransactionService {
     // Process main service
     if (appointment.service && appointment.price) {
       const serviceItem: TransactionItem = {
-        id: `service-${itemIndex++}-${appointment.service.toLowerCase().replace(/\s+/g, '-')}`,
+        id: `item-${transactionId}-${itemIndex++}`,
         name: appointment.service,
         quantity: 1,
         unitPrice: appointment.price,
@@ -120,7 +120,7 @@ export class ConsolidatedTransactionService {
     if (appointment.additionalServices && appointment.additionalServices.length > 0) {
       appointment.additionalServices.forEach((service: any) => {
         const serviceItem: TransactionItem = {
-          id: `service-${itemIndex++}-${service.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: `item-${transactionId}-${itemIndex++}`,
           name: service.name,
           quantity: 1,
           unitPrice: service.price,
@@ -151,7 +151,7 @@ export class ConsolidatedTransactionService {
     if (appointment.products && appointment.products.length > 0) {
       appointment.products.forEach((product: any) => {
         const productItem: TransactionItem = {
-          id: product.id || `product-${itemIndex++}-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
+          id: product.id || `item-${transactionId}-${itemIndex++}`,
           name: product.name,
           quantity: product.quantity || 1,
           unitPrice: product.price,

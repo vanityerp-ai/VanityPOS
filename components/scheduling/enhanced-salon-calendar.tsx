@@ -176,7 +176,7 @@ export function EnhancedSalonCalendar({
   // Exclude admins, managers, and receptionists from locationStaff
   // Check jobRole field (not role) since StaffMember uses jobRole
   locationStaff = locationStaff.filter(staff => {
-    const jobRole = (staff.jobRole || "").toLowerCase().trim();
+    const jobRole = (staff as any).jobRole?.toLowerCase().trim() || "";
     // Exclude receptionists, online store receptionist, and admin roles from calendar columns
     // These roles don't provide direct services to clients
     const excludedRoles = [
@@ -197,9 +197,45 @@ export function EnhancedSalonCalendar({
 
   // Check if user is a receptionist, manager, or admin (they should see all staff)
   const userJobRole = (user as any)?.jobRole?.toLowerCase() || "";
-  const isReceptionist = userJobRole === "receptionist";
+  const isReceptionist = userJobRole === "receptionist" || userJobRole === "online_store_receptionist";
   const isManager = userJobRole === "manager" || user?.role === "MANAGER";
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+  const isAdmin = user?.role === "ADMIN" || (user as any)?.role === "SUPER_ADMIN";
+
+  // Ensure default filter behavior per role on mount/when user or permissions change
+  // Receptionists/Managers/Admins should default to seeing ALL staff at their location
+  // Regular staff with only view_own_appointments default to seeing their OWN column
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("DEBUG: Default filter useEffect triggered");
+    console.log("DEBUG: User details:", { 
+      id: user.id, 
+      name: user.name, 
+      role: user.role, 
+      jobRole: (user as any)?.jobRole, 
+      locations: user.locations 
+    });
+    console.log("DEBUG: Permissions:", { hasViewAll: hasViewAllPermission, hasViewOwn: hasViewOwnPermission });
+    console.log("DEBUG: Role checks:", { isReceptionist, isManager, isAdmin });
+    console.log("DEBUG: Current staffFilter:", staffFilter);
+    console.log("DEBUG: Current location:", currentLocation);
+
+    if (hasViewAllPermission || isReceptionist || isManager || isAdmin) {
+      if (staffFilter !== null) {
+        console.log("DEBUG: Clearing staffFilter for admin/receptionist view");
+        setStaffFilter(null);
+      } else {
+        console.log("DEBUG: staffFilter already null, no change needed");
+      }
+    } else if (!hasViewAllPermission && hasViewOwnPermission) {
+      if (staffFilter !== user.id) {
+        console.log("DEBUG: Setting staffFilter to user's own ID for restricted view");
+        setStaffFilter(user.id);
+      } else {
+        console.log("DEBUG: staffFilter already set to user's ID, no change");
+      }
+    }
+  }, [user?.id, hasViewAllPermission, hasViewOwnPermission, isReceptionist, isManager, isAdmin, staffFilter, currentLocation]); // Added staffFilter and currentLocation to dependencies
 
   if (!hasViewAllPermission && hasViewOwnPermission && user && !isReceptionist && !isManager && !isAdmin) {
     // Regular staff can only see their own column
@@ -221,14 +257,14 @@ export function EnhancedSalonCalendar({
         console.warn(`⚠️ User "${user.name}" (ID: ${user.id}) not found in staff array. Creating fallback staff object.`)
 
         // Create a fallback staff object for the current user
-        const fallbackStaff = {
+        const fallbackStaff: any = {
           id: user.id,
           name: user.name,
           email: user.email || '',
           phone: '',
           role: user.role,
           locations: user.locations || [currentLocation],
-          status: 'active',
+          status: 'Active' as const,
           homeService: false,
           employeeNumber: '',
           dateOfBirth: '',
@@ -304,7 +340,7 @@ export function EnhancedSalonCalendar({
   }
 
   // Create time slots for day view (9 AM to 11 PM with 15-minute intervals)
-  const timeSlots = []
+  const timeSlots: Array<{ hour: number; minute: number; label: string; fullLabel: string; isHourStart: boolean }> = []
   for (let hour = 9; hour <= 23; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
       timeSlots.push({
@@ -397,6 +433,12 @@ export function EnhancedSalonCalendar({
       }
     }
 
+    const hasViewAllPermission = hasPermission("view_appointments")
+    const hasViewOwnPermission = hasPermission("view_own_appointments")
+    const isOwnLimitedUser = !hasViewAllPermission && hasViewOwnPermission && user
+    const userJobRole = (user as any)?.jobRole?.toLowerCase() || ""
+    const isReceptionistRole = userJobRole === "receptionist"
+
     // Special handling for home service location and cross-location blocking
     let isCorrectLocation = false;
     if (currentLocation === "all") {
@@ -430,6 +472,11 @@ export function EnhancedSalonCalendar({
       }
     }
 
+    if (!isCorrectLocation && isOwnLimitedUser && appointment.staffId === user.id) {
+      isCorrectLocation = true;
+      appointment._isCrossLocationBlocking = true;
+    }
+
     // Get the staff member for this appointment
     const staffMember = staff && Array.isArray(staff) ? staff.find(s => s.id === appointment.staffId) : null;
 
@@ -438,17 +485,14 @@ export function EnhancedSalonCalendar({
     const isStaffAssignedToLocation =
       currentLocation === "all" ||
       (staffMember && staffMember.locations.includes(currentLocation)) ||
-      (currentLocation === "home" && staffMember && staffMember.homeService);
+      (currentLocation === "home" && staffMember && staffMember.homeService) ||
+      (isOwnLimitedUser && appointment.staffId === user.id) ||
+      (isReceptionistRole && isCorrectLocation);
 
     const isCorrectStaff = staffFilter === null || appointment.staffId === staffFilter
 
-    // Filter by permission: if user only has "view_own_appointments", show only their appointments
-    const hasViewAllPermission = hasPermission("view_appointments")
-    const hasViewOwnPermission = hasPermission("view_own_appointments")
-
     let isOwnAppointment = true
-    if (!hasViewAllPermission && hasViewOwnPermission && user) {
-      // User can only see their own appointments
+    if (isOwnLimitedUser) {
       isOwnAppointment = appointment.staffId === user.id
     }
 
@@ -1433,7 +1477,7 @@ export function EnhancedSalonCalendar({
                       className="relative min-h-[900px]"
                     >
                       {/* 15-minute interval grid lines */}
-                      {timeSlots.map((timeSlot) => (
+                      {timeSlots.map((timeSlot: { hour: number; minute: number; label: string; fullLabel: string; isHourStart: boolean }) => (
                         <div
                           key={timeSlot.fullLabel}
                           className="absolute w-full cursor-pointer transition-colors duration-100"
