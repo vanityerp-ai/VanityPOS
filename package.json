@@ -42,7 +42,9 @@
     "db:setup:dev": "node scripts/setup-database.js development",
     "db:setup:prod": "node scripts/setup-database.js production",
     "db:setup:test": "node scripts/setup-database.js test",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "setup:supabase": "tsx scripts/setup-supabase.ts",
+    "reset:admin-password": "tsx scripts/reset-admin-password.ts"
   },
   "dependencies": {
     "@auth/core": "latest",

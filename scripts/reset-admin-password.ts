@@ -5,43 +5,30 @@ const prisma = new PrismaClient()
 
 async function resetAdminPassword() {
   try {
-    const email = 'admin@vanityhub.com'
-    const newPassword = 'admin123'
-    
-    console.log('🔐 Resetting password for:', email)
-    console.log('🔑 New password will be:', newPassword)
-    console.log('')
+    console.log('🔐 Resetting admin password...')
     
     // Hash the new password
+    const newPassword = 'Admin33#'
     const hashedPassword = await bcrypt.hash(newPassword, 10)
     
-    // Update the user
+    // Update the admin user's password
     const updatedUser = await prisma.user.update({
-      where: { email },
-      data: { password: hashedPassword },
-      select: {
-        email: true,
-        role: true,
-        isActive: true,
-      }
+      where: { email: 'admin@vanityhub.com' },
+      data: {
+        password: hashedPassword,
+      },
     })
     
-    console.log('✅ Password reset successful!')
-    console.log('')
-    console.log('📋 Login Credentials:')
+    console.log('✅ Admin password reset successfully!')
     console.log('   Email:', updatedUser.email)
-    console.log('   Password:', newPassword)
-    console.log('   Role:', updatedUser.role)
-    console.log('   Active:', updatedUser.isActive)
-    console.log('')
-    console.log('🌐 You can now login at: http://localhost:3001/login')
+    console.log('   New Password:', newPassword)
     
   } catch (error) {
-    console.error('❌ Error resetting password:', error)
+    console.error('❌ Error resetting admin password:', error)
+    process.exit(1)
   } finally {
     await prisma.$disconnect()
   }
 }
 
 resetAdminPassword()
-
