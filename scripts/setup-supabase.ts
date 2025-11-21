@@ -60,12 +60,25 @@ async function setupSupabase() {
     ]
     
     for (const locationData of locations) {
-      const location = await prisma.location.upsert({
-        where: { name: locationData.name },
-        update: locationData,
-        create: locationData,
+      // First, try to find locations by name
+      const existingLocations = await prisma.location.findMany({
+        where: { name: locationData.name }
       })
-      console.log(`   ✅ ${location.name} location created/updated`)
+      
+      if (existingLocations.length > 0) {
+        // Update the first existing location
+        const location = await prisma.location.update({
+          where: { id: existingLocations[0].id },
+          data: locationData
+        })
+        console.log(`   ✅ ${location.name} location updated`)
+      } else {
+        // Create new location
+        const location = await prisma.location.create({
+          data: locationData
+        })
+        console.log(`   ✅ ${location.name} location created`)
+      }
     }
     
     console.log('\n🎉 Supabase setup completed successfully!')
