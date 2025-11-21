@@ -1,35 +1,47 @@
+import { PrismaClient } from '@prisma/client'
+
+// Set the database URL directly
+process.env.DATABASE_URL = 'postgresql://postgres.tyxthyqrbmgjokfcfqgc:nMraMBe5JOLKcYvX@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true'
+
+const prisma = new PrismaClient()
+
 async function testLocationsAPI() {
   try {
-    console.log("🔄 Testing locations API...")
+    console.log('🔍 Testing locations API connection...')
     
-    // Test the API endpoint directly
-    const response = await fetch('http://localhost:3000/api/locations')
+    // Connect to the database
+    await prisma.$connect()
+    console.log('✅ Connected to database')
     
-    if (!response.ok) {
-      console.error(`❌ API request failed: ${response.status} ${response.statusText}`)
-      return
-    }
+    // Try to fetch locations
+    console.log('🔄 Fetching locations...')
+    const locations = await prisma.location.findMany({
+      where: {
+        isActive: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
     
-    const data = await response.json()
-    const locations = data.locations || []
+    console.log(`✅ Found ${locations.length} locations`)
     
-    console.log(`✅ API returned ${locations.length} locations`)
-    
+    // Show first few locations
     if (locations.length > 0) {
-      console.log("\n📍 Locations from API:")
-      locations.forEach((location: any, index: number) => {
-        console.log(`  ${index + 1}. ${location.name} (${location.id})`)
-        console.log(`     Address: ${location.address}, ${location.city}`)
-        console.log(`     Active: ${location.isActive}`)
-        console.log("")
+      console.log('\n📋 First 3 locations:')
+      locations.slice(0, 3).forEach((location, index) => {
+        console.log(`${index + 1}. ${location.name} - ${location.city}, ${location.country}`)
       })
-    } else {
-      console.log("❌ No locations returned from API!")
-      console.log("💡 This might be due to user access filtering.")
     }
+    
+    // Check if locations table exists and has data
+    const locationCount = await prisma.location.count()
+    console.log(`\n📊 Total locations in database: ${locationCount}`)
     
   } catch (error) {
-    console.error("❌ Error testing locations API:", error)
+    console.error('❌ Error testing locations API:', error)
+  } finally {
+    await prisma.$disconnect()
   }
 }
 

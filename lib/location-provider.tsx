@@ -53,26 +53,30 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("🚀 LocationProvider: useEffect triggered - loading locations")
     console.log("🚀 LocationProvider: Current locations state in useEffect:", locations.length, "locations")
-
+    
     // Define loadLocations inline to avoid dependency issues
     const loadLocationsInline = async () => {
       try {
         setIsLoading(true)
         console.log("🔄 LocationProvider: Loading locations from database...")
-
+        
         // Fetch locations from database API
         const response = await fetch('/api/locations')
+        console.log(`📡 LocationProvider: API response status: ${response.status}`)
+        
         if (!response.ok) {
-          console.warn(`⚠️ LocationProvider: API request failed: ${response.statusText}`)
-          throw new Error(`Failed to fetch locations: ${response.statusText}`)
+          const errorText = await response.text()
+          console.warn(`⚠️ LocationProvider: API request failed: ${response.status} ${response.statusText}`)
+          console.warn(`⚠️ LocationProvider: API error details: ${errorText}`)
+          throw new Error(`Failed to fetch locations: ${response.statusText} (${response.status}) - ${errorText}`)
         }
-
+        
         const data = await response.json()
         const dbLocations = data.locations || []
-
+        
         console.log(`✅ LocationProvider: Loaded ${dbLocations.length} locations from database`)
-        console.log('✅ LocationProvider: Raw database locations:', dbLocations.map(loc => ({ id: loc.id, name: loc.name })))
-
+        console.log('✅ LocationProvider: Raw database locations:', dbLocations.map((loc: any) => ({ id: loc.id, name: loc.name })))
+        
         // Convert database locations to our Location interface format
         const formattedLocations: Location[] = dbLocations.map((loc: any) => ({
           id: loc.id,
@@ -91,23 +95,23 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
           staffCount: 0,
           servicesCount: 0,
         }))
-
+        
         // Do not deduplicate by name; always use all locations from backend
         // Refresh the location cache to ensure it has the latest data
         await locationCache.refreshCache()
-
+        
         // Get all locations from cache (includes both database and special locations)
         const allCachedLocations = locationCache.getAllLocations()
         setLocations(allCachedLocations)
         setIsHomeServiceEnabled(true)
-
+        
         console.log("✅ LocationProvider: Locations loaded successfully")
         console.log("✅ LocationProvider: Set locations state with:", allCachedLocations.length, "locations")
         console.log("✅ LocationProvider: Location names:", allCachedLocations.map(loc => loc.name))
         console.log("✅ LocationProvider: Final locations:", allCachedLocations)
       } catch (error) {
         console.error("❌ LocationProvider: Error loading locations:", error)
-
+        
         // Try to get locations from cache as fallback
         try {
           console.log("🔄 LocationProvider: Attempting to load from cache as fallback...")
@@ -129,9 +133,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         setHasInitialized(true)
       }
     }
-
+    
     loadLocationsInline()
-
+    
     // Subscribe to specific location events, excluding 'locations-refreshed'
     // to avoid infinite loops
     const unsubscribeAdded = locationEventBus.subscribe('location-added', () => {
@@ -140,24 +144,24 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       setLocations(cachedLocations);
       setIsHomeServiceEnabled(true);
     });
-
+    
     const unsubscribeUpdated = locationEventBus.subscribe('location-updated', () => {
       // Only reload locations when a location is updated
       const cachedLocations = locationCache.getAllLocations();
       setLocations(cachedLocations);
     });
-
+    
     const unsubscribeRemoved = locationEventBus.subscribe('location-removed', () => {
       // Only reload locations when a location is removed
       const cachedLocations = locationCache.getAllLocations();
       setLocations(cachedLocations);
     });
-
+    
     const unsubscribeCurrentChanged = locationEventBus.subscribe('current-location-changed', () => {
       // No need to reload locations when current location changes
       // This is handled by the component that changes the current location
     });
-
+    
     return () => {
       // Unsubscribe when component unmounts
       unsubscribeAdded();
@@ -212,12 +216,18 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     // Re-fetch locations from API
     try {
       const response = await fetch('/api/locations')
+      console.log(`📡 LocationProvider: Refresh API response status: ${response.status}`)
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch locations: ${response.statusText}`)
+        const errorText = await response.text()
+        console.warn(`⚠️ LocationProvider: Refresh API request failed: ${response.status} ${response.statusText}`)
+        console.warn(`⚠️ LocationProvider: Refresh API error details: ${errorText}`)
+        throw new Error(`Failed to fetch locations: ${response.statusText} (${response.status}) - ${errorText}`)
       }
+      
       const data = await response.json()
       const dbLocations = data.locations || []
-
+      
       const formattedLocations: Location[] = dbLocations.map((loc: any) => ({
         id: loc.id,
         name: loc.name,
@@ -235,7 +245,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         staffCount: 0,
         servicesCount: 0,
       }))
-
+      
       setLocations(formattedLocations)
       console.log("✅ LocationProvider: Locations refreshed successfully")
     } catch (error) {
