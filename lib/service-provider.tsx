@@ -49,12 +49,26 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
 
   // Load services from database
   const loadServices = useCallback(async () => {
     try {
       console.log("🔄 Loading services from database...")
+      
+      // Wait for authentication to be established
+      if (!isAuthenticated && user === null) {
+        console.log("⏳ Waiting for authentication...")
+        // Wait a bit for auth to initialize
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      // If still not authenticated, return empty services
+      if (!isAuthenticated && user === null) {
+        console.log("⚠️ Not authenticated, returning empty services")
+        setServices([])
+        return []
+      }
 
       // Check if we're in the client portal by looking at the current path
       const isClientPortal = typeof window !== 'undefined' && window.location.pathname.includes('/client-portal')
@@ -63,7 +77,13 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
       console.log(`🌐 Loading services for ${isClientPortal ? 'client portal' : 'admin dashboard'}`)
       console.log(`🔗 Fetching from URL: ${url}`)
       
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add credentials to ensure cookies are sent with the request
+        credentials: 'include'
+      })
 
       console.log(`📡 Response status: ${response.status}`)
       
@@ -86,7 +106,7 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
       setServices([])
       throw err
     }
-  }, [])
+  }, [isAuthenticated, user])
 
   // Load categories from database
   const loadCategories = useCallback(async () => {
