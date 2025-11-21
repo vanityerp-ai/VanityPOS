@@ -5,8 +5,9 @@ import { getUserFromHeaders, filterLocationsByAccess } from "@/lib/auth-server"
 export async function GET(request: NextRequest) {
   try {
     console.log("🔄 Fetching locations from database...")
-
-    const locations = await prisma.location.findMany({
+    
+    // Add a timeout to prevent hanging requests
+    const locationsPromise = prisma.location.findMany({
       where: {
         isActive: true
       },
@@ -14,7 +15,14 @@ export async function GET(request: NextRequest) {
         name: 'asc'
       }
     })
-
+    
+    // Add timeout handling
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database query timeout')), 10000)
+    })
+    
+    const locations = await Promise.race([locationsPromise, timeoutPromise]) as any[]
+    
     // Transform locations to match expected format
     const transformedLocations = locations.map(location => ({
       id: location.id,
@@ -30,25 +38,32 @@ export async function GET(request: NextRequest) {
       createdAt: location.createdAt,
       updatedAt: location.updatedAt
     }))
-
+    
     // Apply user-based access control
     const currentUser = getUserFromHeaders(request);
     let filteredLocations = transformedLocations;
-
+    
     if (currentUser) {
-      console.log(`🔍 Current user: ${currentUser.email}, Role: ${currentUser.role}, Locations: ${JSON.stringify(currentUser.locations)}`);
-      filteredLocations = filterLocationsByAccess(transformedLocations, currentUser.locations || [], currentUser.role);
+      console.log(`🔍 Current user ID: ${currentUser.id}, Role: ${currentUser.role || 'Unknown'}, Locations: ${JSON.stringify(currentUser.locations)}`);
+      filteredLocations = filterLocationsByAccess(transformedLocations, currentUser.locations || [], currentUser.role || undefined);
       console.log(`🔒 Filtered locations by user access: ${filteredLocations.length}/${transformedLocations.length} locations visible to user`);
       console.log(`🔒 Visible locations: ${filteredLocations.map(loc => loc.name).join(', ')}`);
     } else {
       console.log("🔍 No authenticated user found, returning all locations");
     }
-
+    
     console.log(`✅ Successfully fetched ${filteredLocations.length} locations`)
     return NextResponse.json({ locations: filteredLocations })
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error fetching locations:", error)
-    return NextResponse.json({ error: "Failed to fetch locations" }, { status: 500 })
+    
+    // Provide more detailed error information
+    let errorMessage = "Failed to fetch locations"
+    if (error.message) {
+      errorMessage = error.message
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
 
@@ -56,12 +71,12 @@ export async function POST(request: Request) {
   try {
     console.log("🔄 Creating new location...")
     const data = await request.json()
-
+    
     // Validate required fields
     if (!data.name || !data.address || !data.city) {
       return NextResponse.json({ error: "Missing required fields: name, address, and city are required" }, { status: 400 })
     }
-
+    
     // Create the location with Prisma
     const location = await prisma.location.create({
       data: {
@@ -75,7 +90,7 @@ export async function POST(request: Request) {
         email: data.email || "",
       }
     })
-
+    
     // Transform location to match expected format
     const transformedLocation = {
       id: location.id,
@@ -91,11 +106,18 @@ export async function POST(request: Request) {
       createdAt: location.createdAt,
       updatedAt: location.updatedAt
     }
-
+    
     console.log(`✅ Successfully created location: ${location.name}`)
     return NextResponse.json({ location: transformedLocation }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error creating location:", error)
-    return NextResponse.json({ error: "Failed to create location" }, { status: 500 })
+    
+    // Provide more detailed error information
+    let errorMessage = "Failed to create location"
+    if (error.message) {
+      errorMessage = error.message
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

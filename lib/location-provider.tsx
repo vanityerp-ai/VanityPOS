@@ -60,15 +60,36 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(true)
         console.log("🔄 LocationProvider: Loading locations from database...")
         
-        // Fetch locations from database API
-        const response = await fetch('/api/locations')
+        // Fetch locations from database API with better error handling
+        const response = await fetch('/api/locations', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // Add credentials to ensure cookies are sent with the request
+          credentials: 'include'
+        })
         console.log(`📡 LocationProvider: API response status: ${response.status}`)
         
         if (!response.ok) {
           const errorText = await response.text()
           console.warn(`⚠️ LocationProvider: API request failed: ${response.status} ${response.statusText}`)
           console.warn(`⚠️ LocationProvider: API error details: ${errorText}`)
-          throw new Error(`Failed to fetch locations: ${response.statusText} (${response.status}) - ${errorText}`)
+          
+          // Try to parse JSON error response
+          let errorMessage = `Failed to fetch locations: ${response.statusText} (${response.status})`
+          try {
+            const errorData = JSON.parse(errorText)
+            if (errorData.error) {
+              errorMessage = errorData.error
+            }
+          } catch (parseError) {
+            // If parsing fails, use the raw error text
+            if (errorText) {
+              errorMessage = errorText
+            }
+          }
+          
+          throw new Error(errorMessage)
         }
         
         const data = await response.json()
@@ -215,14 +236,35 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     console.log("🔄 LocationProvider: Refreshing locations from database...")
     // Re-fetch locations from API
     try {
-      const response = await fetch('/api/locations')
+      const response = await fetch('/api/locations', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add credentials to ensure cookies are sent with the request
+        credentials: 'include'
+      })
       console.log(`📡 LocationProvider: Refresh API response status: ${response.status}`)
       
       if (!response.ok) {
         const errorText = await response.text()
         console.warn(`⚠️ LocationProvider: Refresh API request failed: ${response.status} ${response.statusText}`)
         console.warn(`⚠️ LocationProvider: Refresh API error details: ${errorText}`)
-        throw new Error(`Failed to fetch locations: ${response.statusText} (${response.status}) - ${errorText}`)
+        
+        // Try to parse JSON error response
+        let errorMessage = `Failed to fetch locations: ${response.statusText} (${response.status})`
+        try {
+          const errorData = JSON.parse(errorText)
+          if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (parseError) {
+          // If parsing fails, use the raw error text
+          if (errorText) {
+            errorMessage = errorText
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
       
       const data = await response.json()
