@@ -36,7 +36,7 @@ const ServiceContext = createContext<ServiceContextType>({
   refreshServices: async () => {},
   refreshCategories: async () => {},
   refreshData: async () => {},
-  addService: async () => ({ id: "", name: "", category: "", price: 0, duration: 0, locations: [] }),
+  addService: async () => ({ id: "", name: "", category: "", type: "service", price: 0, duration: 0, locations: [] }),
   updateService: async () => {},
   deleteService: async () => {},
   addCategory: async () => ({ id: "", name: "", description: "", serviceCount: 0 }),
@@ -61,10 +61,16 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
       const url = isClientPortal ? "/api/services?clientPortal=true" : "/api/services"
 
       console.log(`🌐 Loading services for ${isClientPortal ? 'client portal' : 'admin dashboard'}`)
+      console.log(`🔗 Fetching from URL: ${url}`)
+      
       const response = await fetch(url)
 
+      console.log(`📡 Response status: ${response.status}`)
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch services: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error(`❌ Failed to fetch services. Status: ${response.status}, Body: ${errorText}`)
+        throw new Error(`Failed to fetch services: ${response.statusText} (${response.status}) - ${errorText}`)
       }
 
       const data = await response.json()
@@ -76,6 +82,8 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
       console.error("❌ Error loading services:", err)
       const errorMessage = err instanceof Error ? err.message : "Failed to load services"
       setError(errorMessage)
+      // Return empty array to prevent app from crashing
+      setServices([])
       throw err
     }
   }, [])
